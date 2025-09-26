@@ -104,10 +104,10 @@
                     </div>
 
                     @if($asset->image_path)
-                        <div class="mb-4">
+                        <div class="mb-4 relative w-full h-32 overflow-hidden rounded-md border bg-muted">
                             <img src="{{ Storage::url($asset->image_path) }}" 
                                  alt="{{ $asset->description }}"
-                                 class="h-32 w-full rounded-md object-cover border" />
+                                 class="absolute inset-0 h-full w-full object-cover" />
                         </div>
                     @endif
 
