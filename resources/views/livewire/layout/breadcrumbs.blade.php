@@ -1,5 +1,7 @@
 @php
     $isAdmin = request()->routeIs('admin.*');
+    $isAssets = request()->routeIs('assets.*');
+    
     $crumbs = [
         [
             'label' => 'Dashboard',
@@ -7,7 +9,40 @@
             'active' => request()->routeIs('dashboard'),
         ],
     ];
-    if ($isAdmin) {
+    
+    if ($isAssets) {
+        $crumbs[] = [
+            'label' => 'Assets Management',
+            'route' => route('assets.index'),
+            'active' => request()->routeIs('assets.index'),
+        ];
+        
+        if (request()->routeIs('assets.form')) {
+            $crumbs[] = [
+                'label' => request()->route('assetId') ? 'Edit Asset' : 'Add Asset',
+                'route' => '#',
+                'active' => true,
+            ];
+        } elseif (request()->routeIs('assets.transfer')) {
+            $crumbs[] = [
+                'label' => 'Transfer Asset',
+                'route' => '#',
+                'active' => true,
+            ];
+        } elseif (request()->routeIs('assets.history')) {
+            $crumbs[] = [
+                'label' => 'Asset History',
+                'route' => '#',
+                'active' => true,
+            ];
+        } elseif (request()->routeIs('assets.reports')) {
+            $crumbs[] = [
+                'label' => 'Reports',
+                'route' => '#',
+                'active' => true,
+            ];
+        }
+    } elseif ($isAdmin) {
         $crumbs[] = [
             'label' => 'User Management',
             'route' => route('admin.invitations'),

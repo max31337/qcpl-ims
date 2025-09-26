@@ -1,0 +1,379 @@
+<?php
+
+namespace App\Livewire\Assets;
+
+use App\Models\Asset;
+use App\Models\Category;
+use App\Models\Branch;
+use Livewire\Component;
+use Livewire\WithPagination;
+use Livewire\WithFileUploads;
+use Livewire\Attributes\On;
+use Livewire\Attributes\Layout;
+use App\Models\Division;
+use App\Models\Section;
+use Illuminate\Support\Facades\Storage;
+use Carbon\Carbon;
+
+#[Layout('layouts.app')]
+class AssetList extends Component
+{
+    use WithPagination, WithFileUploads;
+
+    public $search = '';
+    public $categoryFilter = '';
+    public $statusFilter = '';
+    public $branchFilter = '';
+    public $perPage = 12;
+
+    // Modal properties
+    public $showModal = false;
+    public $editingAsset = null;
+    public $modalTitle = '';
+
+    // Form properties
+    public $property_number = '';
+    public $description = '';
+    public $quantity = 1;
+    public $date_acquired = '';
+    public $unit_cost = '';
+    public $total_cost = '';
+    public $category_id = '';
+    public $status = 'active';
+    public $source = 'qc_property';
+    public $image;
+    public $current_image_path = '';
+    public $image_preview_url = '';
+    public $current_branch_id = '';
+    public $current_division_id = '';
+    public $current_section_id = '';
+
+    // Available options
+    public $divisions = [];
+    public $sections = [];
+
+    public function mount()
+    {
+        // Initialize with current user's location if available
+        $user = auth()->user();
+        if ($user && $user->branch_id) {
+            $this->current_branch_id = $user->branch_id;
+            $this->current_division_id = $user->division_id;
+            $this->current_section_id = $user->section_id;
+        }
+    }
+
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'categoryFilter' => ['except' => ''],
+        'statusFilter' => ['except' => ''],
+        'branchFilter' => ['except' => ''],
+    ];
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCategoryFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatusFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingBranchFilter()
+    {
+        $this->resetPage();
+    }
+
+    protected $rules = [
+        'description' => 'required|string|max:1000',
+        'quantity' => 'required|integer|min:1',
+        'date_acquired' => 'required|date',
+        'unit_cost' => 'required|numeric|min:0',
+        'category_id' => 'required|exists:categories,id',
+        'status' => 'required|in:active,condemn,disposed',
+        'source' => 'required|in:qc_property,donation',
+        'current_branch_id' => 'required|exists:branches,id',
+        'current_division_id' => 'required|exists:divisions,id',
+        'current_section_id' => 'required|exists:sections,id',
+        'image' => 'nullable|image|max:2048',
+    ];
+
+    public function resetFilters()
+    {
+        $this->search = '';
+        $this->categoryFilter = '';
+        $this->statusFilter = '';
+        $this->branchFilter = '';
+        $this->resetPage();
+    }
+
+    public function openCreateModal()
+    {
+        $this->resetForm();
+        $this->modalTitle = 'Add New Asset';
+        $this->property_number = Asset::generatePropertyNumber();
+        $this->date_acquired = now()->format('Y-m-d');
+        
+        // Set default location from current user
+        $user = auth()->user();
+        if ($user) {
+            $this->current_branch_id = $user->branch_id ?? '';
+            $this->current_division_id = $user->division_id ?? '';
+            $this->current_section_id = $user->section_id ?? '';
+        }
+        
+        $this->loadDivisions();
+        $this->loadSections();
+        $this->showModal = true;
+    }
+
+    public function openEditModal($assetId)
+    {
+        $this->resetForm();
+        $this->editingAsset = Asset::findOrFail($assetId);
+        $this->modalTitle = 'Edit Asset';
+        
+        $this->property_number = $this->editingAsset->property_number;
+        $this->description = $this->editingAsset->description;
+        $this->quantity = $this->editingAsset->quantity;
+        $this->date_acquired = $this->editingAsset->date_acquired;
+        $this->unit_cost = $this->editingAsset->unit_cost;
+        $this->total_cost = $this->editingAsset->total_cost;
+        $this->category_id = $this->editingAsset->category_id;
+        $this->status = $this->editingAsset->status;
+        $this->source = $this->editingAsset->source;
+        $this->current_image_path = $this->editingAsset->image_path;
+        $this->current_branch_id = $this->editingAsset->current_branch_id;
+        $this->current_division_id = $this->editingAsset->current_division_id;
+        $this->current_section_id = $this->editingAsset->current_section_id;
+        
+        $this->loadDivisions();
+        $this->loadSections();
+        $this->showModal = true;
+    }
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->resetForm();
+    }
+
+    public function resetForm()
+    {
+        $this->editingAsset = null;
+        $this->property_number = '';
+        $this->description = '';
+        $this->quantity = 1;
+        $this->date_acquired = '';
+        $this->unit_cost = '';
+        $this->total_cost = '';
+        $this->category_id = '';
+        $this->status = 'active';
+        $this->source = 'qc_property';
+        $this->image = null;
+        $this->current_image_path = '';
+        $this->image_preview_url = '';
+        $this->current_branch_id = '';
+        $this->current_division_id = '';
+        $this->current_section_id = '';
+        $this->divisions = [];
+        $this->sections = [];
+        $this->resetErrorBag();
+    }
+
+    public function updatedUnitCost()
+    {
+        $this->calculateTotalCost();
+    }
+
+    public function updatedQuantity()
+    {
+        $this->calculateTotalCost();
+    }
+
+    public function calculateTotalCost()
+    {
+        if ($this->unit_cost && $this->quantity) {
+            $this->total_cost = number_format($this->unit_cost * $this->quantity, 2, '.', '');
+        }
+    }
+
+    public function updatedCurrentBranchId()
+    {
+        $this->current_division_id = '';
+        $this->current_section_id = '';
+        $this->sections = [];
+        $this->loadDivisions();
+    }
+
+    public function updatedCurrentDivisionId()
+    {
+        $this->current_section_id = '';
+        $this->loadSections();
+    }
+
+    public function updatedImage()
+    {
+        // Validate the uploaded image
+        $this->validate(['image' => 'image|max:2048']);
+        
+        // Generate temporary URL for preview
+        if ($this->image) {
+            $this->image_preview_url = $this->image->temporaryUrl();
+        }
+    }
+
+    public function loadDivisions()
+    {
+        if ($this->current_branch_id) {
+            $this->divisions = Division::where('branch_id', $this->current_branch_id)
+                                    ->where('is_active', true)
+                                    ->orderBy('name')
+                                    ->get();
+        } else {
+            $this->divisions = [];
+        }
+    }
+
+    public function loadSections()
+    {
+        if ($this->current_division_id) {
+            $this->sections = Section::where('division_id', $this->current_division_id)
+                                   ->where('is_active', true)
+                                   ->orderBy('name')
+                                   ->get();
+        } else {
+            $this->sections = [];
+        }
+    }
+
+    public function save()
+    {
+        $this->validate();
+
+        $data = [
+            'description' => $this->description,
+            'quantity' => $this->quantity,
+            'date_acquired' => $this->date_acquired,
+            'unit_cost' => $this->unit_cost,
+            'total_cost' => $this->total_cost,
+            'category_id' => $this->category_id,
+            'status' => $this->status,
+            'source' => $this->source,
+            'current_branch_id' => $this->current_branch_id,
+            'current_division_id' => $this->current_division_id,
+            'current_section_id' => $this->current_section_id,
+        ];
+
+        // Handle image upload
+        if ($this->image) {
+            // Delete old image if editing
+            if ($this->editingAsset && $this->editingAsset->image_path) {
+                Storage::disk('public')->delete($this->editingAsset->image_path);
+            }
+            $data['image_path'] = $this->image->store('assets', 'public');
+        }
+
+        if ($this->editingAsset) {
+            // Update existing asset
+            $this->editingAsset->update($data);
+            
+            session()->flash('success', 'Asset updated successfully!');
+            $this->dispatch('asset-updated');
+        } else {
+            // Create new asset
+            $data['property_number'] = $this->property_number;
+            $data['created_by'] = auth()->id();
+            
+            Asset::create($data);
+            
+            session()->flash('success', 'Asset created successfully!');
+            $this->dispatch('asset-created');
+        }
+
+        $this->closeModal();
+    }
+
+    public function edit($assetId)
+    {
+        return redirect()->route('assets.form', $assetId);
+    }
+
+    public function transfer($assetId)
+    {
+        return redirect()->route('assets.transfer', $assetId);
+    }
+
+    public function history($assetId)
+    {
+        return redirect()->route('assets.history', $assetId);
+    }
+
+    #[On('asset-created')]
+    #[On('asset-updated')]
+    #[On('asset-transferred')]
+    public function refreshAssets()
+    {
+        $this->resetPage();
+    }
+
+    public function getAssetsProperty()
+    {
+        $query = Asset::with(['category', 'currentBranch', 'currentDivision', 'currentSection'])
+            ->forUser(auth()->user());
+
+        if ($this->search) {
+            $query->where(function ($q) {
+                $q->where('property_number', 'like', '%' . $this->search . '%')
+                  ->orWhere('description', 'like', '%' . $this->search . '%');
+            });
+        }
+
+        if ($this->categoryFilter) {
+            $query->where('category_id', $this->categoryFilter);
+        }
+
+        if ($this->statusFilter) {
+            $query->where('status', $this->statusFilter);
+        }
+
+        if ($this->branchFilter) {
+            $query->where('current_branch_id', $this->branchFilter);
+        }
+
+        return $query->orderBy('created_at', 'desc')
+                    ->paginate($this->perPage);
+    }
+
+    public function getCategoriesProperty()
+    {
+        return Category::where('type', 'asset')
+                      ->where('is_active', true)
+                      ->orderBy('name')
+                      ->get();
+    }
+
+    public function getBranchesProperty()
+    {
+        $user = auth()->user();
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver())) {
+            return Branch::where('is_active', true)->orderBy('name')->get();
+        }
+        return Branch::where('id', $user->branch_id)->get();
+    }
+
+    public function render()
+    {
+        return view('livewire.assets.asset-list', [
+            'assets' => $this->assets,
+            'categories' => $this->categories,
+            'branches' => $this->branches,
+        ]);
+    }
+}
