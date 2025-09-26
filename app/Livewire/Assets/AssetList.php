@@ -24,6 +24,7 @@ class AssetList extends Component
     public $categoryFilter = '';
     public $statusFilter = '';
     public $branchFilter = '';
+    public $recentFilter = '';
     public $perPage = 12;
     public $viewMode = 'card'; // 'card' | 'list'
 
@@ -73,6 +74,7 @@ class AssetList extends Component
         'categoryFilter' => ['except' => ''],
         'statusFilter' => ['except' => ''],
         'branchFilter' => ['except' => ''],
+        'recentFilter' => ['except' => ''],
         'viewMode' => ['except' => 'card'],
     ];
 
@@ -92,6 +94,11 @@ class AssetList extends Component
     }
 
     public function updatingBranchFilter()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingRecentFilter()
     {
         $this->resetPage();
     }
@@ -116,6 +123,7 @@ class AssetList extends Component
         $this->categoryFilter = '';
         $this->statusFilter = '';
         $this->branchFilter = '';
+        $this->recentFilter = '';
         $this->resetPage();
     }
 
@@ -393,6 +401,13 @@ class AssetList extends Component
 
         if ($this->branchFilter) {
             $query->where('current_branch_id', $this->branchFilter);
+        }
+
+        if ($this->recentFilter) {
+            $days = (int) $this->recentFilter;
+            if ($days > 0) {
+                $query->where('created_at', '>=', now()->subDays($days));
+            }
         }
 
         return $query->orderBy('created_at', 'desc')

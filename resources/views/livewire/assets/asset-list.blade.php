@@ -42,7 +42,7 @@
 
     <!-- Filters -->
     <x-ui.card class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Search</label>
                 <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Search assets..." class="mt-1.5" />
@@ -70,6 +70,17 @@
                 </select>
             </div>
 
+            <div>
+                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Recent</label>
+                <select wire:model.live="recentFilter"
+                        class="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <option value="">All Time</option>
+                    <option value="7">Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                </select>
+            </div>
+
             @if(count($branches) > 1)
             <div>
                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Branch</label>
@@ -89,7 +100,7 @@
                 Showing {{ $assets->count() }} of {{ $assets->total() }} assets
             </p>
             
-            @if($search || $categoryFilter || $statusFilter || $branchFilter)
+            @if($search || $categoryFilter || $statusFilter || $branchFilter || $recentFilter)
                 <x-ui.button wire:click="resetFilters" variant="outline" size="sm">
                     <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18"/>
