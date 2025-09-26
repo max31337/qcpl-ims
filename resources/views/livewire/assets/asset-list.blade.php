@@ -92,7 +92,7 @@
     @if($assets->count() > 0)
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($assets as $asset)
-                <x-ui.card class="p-6 hover:shadow-md transition-shadow">
+                <x-ui.card class="p-6 hover:shadow-md transition-shadow cursor-pointer" wire:click="openDetailsModal({{ $asset->id }})">
                     <div class="flex items-start justify-between mb-4">
                         <span class="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
                             {{ $asset->property_number }}
@@ -142,7 +142,7 @@
                         </div>
                         
                         <div class="flex gap-2">
-                            <button wire:click="history({{ $asset->id }})" 
+                            <button wire:click.stop="history({{ $asset->id }})" 
                                     class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
@@ -151,7 +151,7 @@
                                 </svg>
                             </button>
                             
-                            <x-ui.button wire:click="openEditModal({{ $asset->id }})" variant="ghost" size="sm">
+                            <x-ui.button wire:click.stop="openEditModal({{ $asset->id }})" variant="ghost" size="sm">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5"/>
                                     <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
@@ -159,7 +159,7 @@
                                 </svg>
                             </x-ui.button>
                             
-                            <x-ui.button wire:click="transfer({{ $asset->id }})" size="sm">
+                            <x-ui.button wire:click.stop="transfer({{ $asset->id }})" size="sm">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
                                 </svg>
@@ -200,6 +200,145 @@
             @endif
         </x-ui.card>
     @endif
+
+        <!-- Asset Details Modal -->
+        <div x-data="{ show: @entangle('showDetailsModal') }"
+             x-show="show"
+             x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div x-show="show"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                     @click="$wire.closeDetailsModal()"></div>
+
+                <!-- Modal panel -->
+                <div x-show="show"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900">Asset Details</h3>
+                            <p class="text-sm text-muted-foreground" x-text="$wire.selectedAsset?.property_number"></p>
+                        </div>
+                        <button @click="$wire.closeDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="px-6 py-6">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="md:col-span-1">
+                                <div class="border rounded-lg p-2 bg-muted flex items-center justify-center min-h-40">
+                                    <template x-if="$wire.selectedAsset?.image_url">
+                                        <img :src="$wire.selectedAsset.image_url" alt="Asset image" class="rounded-md object-cover max-h-60">
+                                    </template>
+                                    <template x-if="!$wire.selectedAsset?.image_url">
+                                        <div class="text-center text-muted-foreground text-sm">No image</div>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="md:col-span-2 space-y-4">
+                                <div>
+                                    <h4 class="font-semibold text-xl" x-text="$wire.selectedAsset?.description"></h4>
+                                    <div class="mt-1 flex items-center gap-2">
+                                        <span class="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded" x-text="$wire.selectedAsset?.property_number"></span>
+                                        <span class="text-xs inline-flex items-center rounded px-2 py-1"
+                                              :class="{
+                                                'bg-green-100 text-green-800': $wire.selectedAsset?.status === 'active',
+                                                'bg-yellow-100 text-yellow-800': $wire.selectedAsset?.status === 'condemn',
+                                                'bg-red-100 text-red-800': $wire.selectedAsset?.status === 'disposed'
+                                              }"
+                                              x-text="$wire.selectedAsset?.status?.charAt(0).toUpperCase() + $wire.selectedAsset?.status?.slice(1)"></span>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Category</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.category"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Date Acquired</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.date_acquired_human"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Quantity</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.quantity"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Unit Cost</div>
+                                        <div class="font-medium" x-text="($wire.selectedAsset?.unit_cost ?? 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Total Cost</div>
+                                        <div class="font-medium" x-text="($wire.selectedAsset?.total_cost ?? 0).toLocaleString('en-PH', { style: 'currency', currency: 'PHP' })"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Source</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.source === 'qc_property' ? 'QC Property' : 'Donation'"></div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Branch</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.branch"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Division</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.division"></div>
+                                    </div>
+                                    <div class="text-sm">
+                                        <div class="text-muted-foreground">Section</div>
+                                        <div class="font-medium" x-text="$wire.selectedAsset?.section"></div>
+                                    </div>
+                                </div>
+
+                                <div class="pt-4 flex gap-2">
+                                    <x-ui.button size="sm" @click="$wire.closeDetailsModal(); $wire.history($wire.selectedAsset?.id)">
+                                        <svg class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                            <path d="M3 3v5h5"/>
+                                            <path d="M12 7v5l4 2"/>
+                                        </svg>
+                                        View History
+                                    </x-ui.button>
+                                    <x-ui.button size="sm" variant="secondary" @click="$wire.closeDetailsModal(); $wire.openEditModal($wire.selectedAsset?.id)">
+                                        <svg class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5"/>
+                                            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                            <path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1.05-3.95 5.37-5.44Z"/>
+                                        </svg>
+                                        Edit Asset
+                                    </x-ui.button>
+                                    <x-ui.button size="sm" variant="outline" @click="$wire.closeDetailsModal(); $wire.transfer($wire.selectedAsset?.id)">
+                                        <svg class="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                        </svg>
+                                        Transfer
+                                    </x-ui.button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <!-- Asset Form Modal -->
     <div x-data="{ show: @entangle('showModal') }" 

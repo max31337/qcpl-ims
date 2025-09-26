@@ -31,6 +31,10 @@ class AssetList extends Component
     public $editingAsset = null;
     public $modalTitle = '';
 
+    // Details modal properties
+    public $showDetailsModal = false;
+    public $selectedAsset = null; // array of asset details
+
     // Form properties
     public $property_number = '';
     public $description = '';
@@ -162,6 +166,12 @@ class AssetList extends Component
     {
         $this->showModal = false;
         $this->resetForm();
+    }
+
+    public function closeDetailsModal()
+    {
+        $this->showDetailsModal = false;
+        $this->selectedAsset = null;
     }
 
     public function resetForm()
@@ -298,6 +308,35 @@ class AssetList extends Component
         }
 
         $this->closeModal();
+    }
+
+    public function openDetailsModal($assetId)
+    {
+        // Load asset with relationships, scoping by user
+        $asset = Asset::with(['category', 'currentBranch', 'currentDivision', 'currentSection', 'createdBy'])
+            ->forUser(auth()->user())
+            ->findOrFail($assetId);
+
+        $this->selectedAsset = [
+            'id' => $asset->id,
+            'property_number' => $asset->property_number,
+            'description' => $asset->description,
+            'quantity' => $asset->quantity,
+            'unit_cost' => (float) $asset->unit_cost,
+            'total_cost' => (float) $asset->total_cost,
+            'date_acquired' => $asset->date_acquired ? Carbon::parse($asset->date_acquired)->format('Y-m-d') : null,
+            'date_acquired_human' => $asset->date_acquired ? Carbon::parse($asset->date_acquired)->format('M d, Y') : null,
+            'category' => $asset->category?->name,
+            'status' => $asset->status,
+            'source' => $asset->source,
+            'image_url' => $asset->image_path ? Storage::url($asset->image_path) : null,
+            'branch' => $asset->currentBranch?->name,
+            'division' => $asset->currentDivision?->name,
+            'section' => $asset->currentSection?->name,
+            'created_by' => $asset->createdBy?->name,
+        ];
+
+        $this->showDetailsModal = true;
     }
 
     public function edit($assetId)
