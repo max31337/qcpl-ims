@@ -615,24 +615,29 @@
                         </div>
 
                         <!-- Image Upload -->
-                        <div>
+                        <div x-data>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Asset Image</label>
                             
                             <!-- Image Preview -->
                             @if($image)
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <img src="{{ $image->temporaryUrl() }}" alt="Preview" class="mx-auto h-32 w-32 object-cover rounded-lg border">
-                                    <button wire:click="$set('image', null)" type="button" class="mt-2 text-sm text-red-600 hover:text-red-800">
-                                        Remove Image
-                                    </button>
+                                    <div class="mt-2 flex items-center gap-3 justify-center">
+                                        <x-ui.button type="button" size="sm" variant="secondary" @click="document.getElementById('image-upload').click()">Replace Image</x-ui.button>
+                                        <button wire:click="$set('image', null)" type="button" class="text-sm text-red-600 hover:text-red-800">Remove Image</button>
+                                    </div>
                                 </div>
                             @elseif($current_image_path)
-                                <div class="mb-4">
+                                <div class="mb-3">
                                     <img src="{{ asset('storage/' . $current_image_path) }}" alt="Current image" class="mx-auto h-32 w-32 object-cover rounded-lg border">
+                                    <div class="mt-2 flex items-center gap-3 justify-center">
+                                        <x-ui.button type="button" size="sm" variant="secondary" @click="document.getElementById('image-upload').click()">Replace Image</x-ui.button>
+                                    </div>
                                 </div>
                             @endif
-                            
-                            <!-- File Upload -->
+
+                            <!-- File Upload (only when no image yet) -->
+                            @if(!$image && !$current_image_path)
                             <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-gray-400 transition-colors">
                                 <div class="space-y-1 text-center">
                                     <div wire:loading wire:target="image" class="text-blue-600">
@@ -649,7 +654,6 @@
                                         <div class="flex text-sm text-gray-600">
                                             <label for="image-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                                                 <span>Upload a file</span>
-                                                <input id="image-upload" wire:model="image" type="file" class="sr-only" accept="image/*">
                                             </label>
                                             <p class="pl-1">or drag and drop</p>
                                         </div>
@@ -657,6 +661,10 @@
                                     </div>
                                 </div>
                             </div>
+                            @endif
+
+                            <!-- Hidden file input reused for Upload/Replace -->
+                            <input id="image-upload" wire:model="image" type="file" class="sr-only" accept="image/*">
                             
                             @error('image') <span class="text-sm text-red-600">{{ $message }}</span> @enderror
                         </div>
