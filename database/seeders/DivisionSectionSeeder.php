@@ -12,13 +12,8 @@ class DivisionSectionSeeder extends Seeder
 {
     public function run(): void
     {
-        // Attach to MAIN branch; create if missing
-        $main = Branch::firstOrCreate(
-            ['code' => 'MAIN'],
-            ['name' => 'Main Library','district' => 'QC','address' => 'QC Main','is_main' => true]
-        );
-
-        $map = [
+        // Full structure (for Main Library)
+        $mainMap = [
             'ADMINISTRATIVE SERVICES' => [
                 'MIS SECTION',
                 'FINANCE & BUDGET',
@@ -45,19 +40,57 @@ class DivisionSectionSeeder extends Seeder
             ],
         ];
 
-        foreach ($map as $divisionName => $sections) {
-            $divCode = strtoupper(preg_replace('/[^A-Z0-9]+/', '', Str::ascii($divisionName)));
-            $division = Division::firstOrCreate(
-                ['code' => $divCode],
-                ['name' => $divisionName, 'branch_id' => $main->id, 'is_active' => true]
-            );
+        // Simplified structure (for other branches)
+        $branchMap = [
+            "READER’S SERVICES DIVISION" => [
+                'GENERAL READING',
+                'CHILDREN’S SECTION',
+            ],
+        ];
 
-            foreach ($sections as $sectionName) {
-                $secCode = strtoupper(preg_replace('/[^A-Z0-9]+/', '', Str::ascii($sectionName)));
-                Section::firstOrCreate(
-                    ['code' => $secCode],
-                    ['name' => $sectionName, 'division_id' => $division->id, 'is_active' => true]
+        // Ensure MAIN exists
+        Branch::firstOrCreate(
+            ['code' => 'MAIN'],
+            [
+                'name' => 'Main Library',
+                'district' => 'QC',
+                'address' => 'QC Main',
+                'is_main' => true,
+            ]
+        );
+
+        foreach (Branch::all() as $branch) {
+            $branchCode = strtoupper($branch->code);
+
+            // Pick structure depending on branch type
+            $map = $branch->is_main ? $mainMap : $branchMap;
+
+            foreach ($map as $divisionName => $sections) {
+                $divBase = strtoupper(preg_replace('/[^A-Z0-9]+/', '', Str::ascii($divisionName)));
+                $divCode = $branchCode . '-' . $divBase;
+
+                $division = Division::firstOrCreate(
+                    ['code' => $divCode],
+                    [
+                        'name' => $divisionName,
+                        'branch_id' => $branch->id,
+                        'is_active' => true,
+                    ]
                 );
+
+                foreach ($sections as $sectionName) {
+                    $secBase = strtoupper(preg_replace('/[^A-Z0-9]+/', '', Str::ascii($sectionName)));
+                    $secCode = $divCode . '-' . $secBase;
+
+                    Section::firstOrCreate(
+                        ['code' => $secCode],
+                        [
+                            'name' => $sectionName,
+                            'division_id' => $division->id,
+                            'is_active' => true,
+                        ]
+                    );
+                }
             }
         }
     }
