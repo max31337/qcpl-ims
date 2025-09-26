@@ -18,8 +18,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Ensure branches and districts
-        $this->call(BranchSeeder::class);
+    // Ensure branches and districts
+    $this->call(BranchSeeder::class);
+    // Ensure divisions and sections
+    $this->call(DivisionSectionSeeder::class);
 
         // Categories
         foreach ([
