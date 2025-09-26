@@ -36,10 +36,20 @@ class AssetHistory extends Component
             ->paginate(10);
     }
 
+    public function getOriginRecordProperty()
+    {
+        return AssetTransferHistory::with(['originBranch', 'originDivision', 'originSection'])
+            ->where('asset_id', $this->asset->id)
+            ->orderBy('transfer_date', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->first();
+    }
+
     public function render()
     {
         return view('livewire.assets.asset-history', [
             'transferHistory' => $this->transferHistory,
+            'originRecord' => $this->originRecord,
         ]);
     }
 }

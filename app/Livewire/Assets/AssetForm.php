@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Branch;
 use App\Models\Division;
 use App\Models\Section;
+use App\Models\AssetTransferHistory;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Layout;
@@ -173,6 +174,31 @@ class AssetForm extends Component
         if ($this->assetId) {
             // Update existing asset
             $asset = Asset::findOrFail($this->assetId);
+
+            // If location changed, write transfer history first
+            $locationChanged = (
+                (int) $asset->current_branch_id !== (int) $this->current_branch_id ||
+                (int) $asset->current_division_id !== (int) $this->current_division_id ||
+                (int) $asset->current_section_id !== (int) $this->current_section_id
+            );
+
+            if ($locationChanged) {
+                AssetTransferHistory::create([
+                    'asset_id' => $asset->id,
+                    'transfer_date' => now(),
+                    'origin_branch_id' => $asset->current_branch_id,
+                    'origin_division_id' => $asset->current_division_id,
+                    'origin_section_id' => $asset->current_section_id,
+                    'previous_branch_id' => $asset->current_branch_id,
+                    'previous_division_id' => $asset->current_division_id,
+                    'previous_section_id' => $asset->current_section_id,
+                    'current_branch_id' => $this->current_branch_id,
+                    'current_division_id' => $this->current_division_id,
+                    'current_section_id' => $this->current_section_id,
+                    'remarks' => 'Location updated via asset edit form',
+                    'transferred_by' => auth()->id(),
+                ]);
+            }
             $asset->update($data);
             
             session()->flash('success', 'Asset updated successfully.');

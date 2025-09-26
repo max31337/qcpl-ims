@@ -40,8 +40,20 @@
                     <h3 class="font-semibold text-lg mb-1">{{ $asset->description }}</h3>
                     <p class="text-sm text-muted-foreground mb-2">{{ $asset->category->name }}</p>
                     
-                    <div class="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Current: {{ $asset->currentBranch->name }} → {{ $asset->currentDivision->name }} → {{ $asset->currentSection->name }}</span>
+                    <div class="flex flex-col md:flex-row md:items-center md:gap-6 text-sm text-muted-foreground">
+                        <span>
+                            Origin:
+                            @if(isset($originRecord) && $originRecord && $originRecord->originBranch)
+                                {{ $originRecord->originBranch->name }} →
+                                {{ $originRecord->originDivision->name }} →
+                                {{ $originRecord->originSection->name }}
+                            @else
+                                {{ $asset->currentBranch->name }} → {{ $asset->currentDivision->name }} → {{ $asset->currentSection->name }}
+                            @endif
+                        </span>
+                        <span>
+                            Current: {{ $asset->currentBranch->name }} → {{ $asset->currentDivision->name }} → {{ $asset->currentSection->name }}
+                        </span>
                         <span>Value: ₱{{ number_format($asset->total_cost, 2) }}</span>
                     </div>
                 </div>

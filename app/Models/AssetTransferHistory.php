@@ -20,4 +20,19 @@ class AssetTransferHistory extends Model
 
     public function asset(): BelongsTo { return $this->belongsTo(Asset::class); }
     public function transferredBy(): BelongsTo { return $this->belongsTo(User::class, 'transferred_by'); }
+
+    // Origin relations (original/default location)
+    public function originBranch(): BelongsTo { return $this->belongsTo(Branch::class, 'origin_branch_id'); }
+    public function originDivision(): BelongsTo { return $this->belongsTo(Division::class, 'origin_division_id'); }
+    public function originSection(): BelongsTo { return $this->belongsTo(Section::class, 'origin_section_id'); }
+
+    // Previous relations (from location before this transfer)
+    public function previousBranch(): BelongsTo { return $this->belongsTo(Branch::class, 'previous_branch_id'); }
+    public function previousDivision(): BelongsTo { return $this->belongsTo(Division::class, 'previous_division_id'); }
+    public function previousSection(): BelongsTo { return $this->belongsTo(Section::class, 'previous_section_id'); }
+
+    // Current relations (to location after this transfer)
+    public function currentBranch(): BelongsTo { return $this->belongsTo(Branch::class, 'current_branch_id'); }
+    public function currentDivision(): BelongsTo { return $this->belongsTo(Division::class, 'current_division_id'); }
+    public function currentSection(): BelongsTo { return $this->belongsTo(Section::class, 'current_section_id'); }
 }
