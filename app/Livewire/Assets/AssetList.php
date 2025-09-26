@@ -25,6 +25,7 @@ class AssetList extends Component
     public $statusFilter = '';
     public $branchFilter = '';
     public $perPage = 12;
+    public $viewMode = 'card'; // 'card' | 'list'
 
     // Modal properties
     public $showModal = false;
@@ -72,6 +73,7 @@ class AssetList extends Component
         'categoryFilter' => ['except' => ''],
         'statusFilter' => ['except' => ''],
         'branchFilter' => ['except' => ''],
+        'viewMode' => ['except' => 'card'],
     ];
 
     public function updatingSearch()
@@ -352,6 +354,13 @@ class AssetList extends Component
     public function history($assetId)
     {
         return redirect()->route('assets.history', $assetId);
+    }
+
+    public function setViewMode($mode)
+    {
+        if (in_array($mode, ['card', 'list'], true)) {
+            $this->viewMode = $mode;
+        }
     }
 
     #[On('asset-created')]

@@ -5,13 +5,27 @@
             <h1 class="text-3xl font-bold tracking-tight">Assets Management</h1>
             <p class="text-muted-foreground">Manage and track all library assets and properties</p>
         </div>
-        <x-ui.button wire:click="openCreateModal">
-            <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M5 12h14"/>
-                <path d="M12 5v14"/>
-            </svg>
-            Add Asset
-        </x-ui.button>
+        <div class="flex items-center gap-2">
+            <div class="inline-flex rounded-md border">
+                <button type="button" wire:click="setViewMode('card')"
+                        class="px-3 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-ring"
+                        :class="{ 'bg-accent text-accent-foreground': $wire.viewMode === 'card' }">
+                    Cards
+                </button>
+                <button type="button" wire:click="setViewMode('list')"
+                        class="px-3 py-2 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-ring border-l"
+                        :class="{ 'bg-accent text-accent-foreground': $wire.viewMode === 'list' }">
+                    List
+                </button>
+            </div>
+            <x-ui.button wire:click="openCreateModal">
+                <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M5 12h14"/>
+                    <path d="M12 5v14"/>
+                </svg>
+                Add Asset
+            </x-ui.button>
+        </div>
     </div>
 
     <!-- Flash Messages -->
@@ -90,6 +104,7 @@
 
     <!-- Assets Grid -->
     @if($assets->count() > 0)
+        @if($viewMode === 'card')
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($assets as $asset)
                 <x-ui.card class="p-6 hover:shadow-md transition-shadow cursor-pointer" wire:click="openDetailsModal({{ $asset->id }})">
@@ -170,6 +185,83 @@
                 </x-ui.card>
             @endforeach
         </div>
+        @else
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property #</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($assets as $asset)
+                    <tr class="hover:bg-gray-50 cursor-pointer" wire:click="openDetailsModal({{ $asset->id }})">
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded">{{ $asset->property_number }}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                @if($asset->image_path)
+                                    <div class="h-10 w-10 rounded-md overflow-hidden bg-muted border relative">
+                                        <img src="{{ Storage::url($asset->image_path) }}" alt="{{ $asset->description }}" class="absolute inset-0 h-full w-full object-cover">
+                                    </div>
+                                @else
+                                    <div class="h-10 w-10 rounded-md bg-muted border"></div>
+                                @endif
+                                <div>
+                                    <div class="font-medium">{{ $asset->description }}</div>
+                                    <div class="text-xs text-muted-foreground">Status:
+                                        <span class="px-1.5 py-0.5 rounded"
+                                              @class([
+                                                'bg-green-100 text-green-800' => $asset->status === 'active',
+                                                'bg-yellow-100 text-yellow-800' => $asset->status === 'condemn',
+                                                'bg-red-100 text-red-800' => $asset->status === 'disposed',
+                                              ])>
+                                            {{ ucfirst($asset->status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ $asset->category->name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">{{ $asset->currentBranch->name }} • {{ $asset->currentDivision->name }} • {{ $asset->currentSection->name }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">{{ $asset->quantity }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm">₱{{ number_format($asset->total_cost, 2) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right">
+                            <div class="flex justify-end gap-2">
+                                <button wire:click.stop="history({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                        <path d="M3 3v5h5"/>
+                                        <path d="M12 7v5l4 2"/>
+                                    </svg>
+                                </button>
+                                <button wire:click.stop="openEditModal({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5"/>
+                                        <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                        <path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1.05-3.95 5.37-5.44Z"/>
+                                    </svg>
+                                </button>
+                                <button wire:click.stop="transfer({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
+                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
 
         <!-- Pagination -->
         <div class="mt-6">
