@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
+use Carbon\Carbon;
 
 #[Layout('layouts.app')]
 class Dashboard extends Component
@@ -61,7 +62,7 @@ class Dashboard extends Component
             $lowStock = (clone $suppliesQuery)->whereColumn('current_stock','<','min_stock')->count();
             $suppliesValue = (clone $suppliesQuery)->selectRaw('SUM(current_stock*unit_cost) v')->value('v') ?? 0;
 
-            // Monthly assets created (last 6 months)
+            // Monthly assets created (last 12 months, up to end of selected 'to' month)
             $driver = DB::connection()->getDriverName();
             // Use appropriate date formatting function per driver
             $monthExpr = match ($driver) {
@@ -79,16 +80,26 @@ class Dashboard extends Component
                 default => 'YEAR(date_acquired)',
             };
 
-            $monthlyAssets = (clone $assetsQuery)
+            $lineEnd = Carbon::parse($this->to)->endOfMonth();
+            $lineStart = (clone $lineEnd)->startOfMonth()->subMonths(11);
+            $rawMonthly = (clone $assetsQuery)
                 ->selectRaw("$monthExpr as m, COUNT(*) c")
                 ->whereBetween('created_at', [
-                    $this->from . ' 00:00:00',
-                    $this->to . ' 23:59:59',
+                    $lineStart->toDateString() . ' 00:00:00',
+                    $lineEnd->toDateString() . ' 23:59:59',
                 ])
                 ->groupBy('m')
-                ->orderBy('m')
-                ->limit(6)
-                ->get();
+                ->get()
+                ->keyBy('m');
+
+            $monthlyLineLabels = [];
+            $monthlyLineValues = [];
+            for ($i = 0; $i < 12; $i++) {
+                $m = (clone $lineStart)->addMonths($i);
+                $key = $m->format('Y-m');
+                $monthlyLineLabels[] = $m->format('M Y');
+                $monthlyLineValues[] = (int) ($rawMonthly[$key]->c ?? 0);
+            }
 
             // Assets by status (for donut chart)
             $assetsByStatus = (clone $assetsQuery)
@@ -165,7 +176,8 @@ class Dashboard extends Component
                 'supplySkus',
                 'lowStock',
                 'suppliesValue',
-                'monthlyAssets',
+                'monthlyLineLabels',
+                'monthlyLineValues',
                 'assetsByStatus',
                 'assetsByCategoryValue',
                 'assetsByBranch',
