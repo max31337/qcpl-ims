@@ -2,10 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\UserManagement;
+// Admin Dashboard (Livewire)
+use App\Http\Livewire\Admin\Dashboard as AdminDashboard;
 
 Route::view('/', 'welcome')->name('welcome');
 
-Route::view('dashboard', 'dashboard')
+// Admin Dashboard
+Route::get('/dashboard', AdminDashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
