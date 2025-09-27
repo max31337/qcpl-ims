@@ -26,6 +26,13 @@
             Assets Management
         </a>
         
+        <a href="{{ route('supplies.index') }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('supplies.*') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+           wire:navigate>
+            <x-ui.icon name="package" />
+                    Supply Management
+        </a>
+        
         <a href="{{ route('admin.invitations') }}"
            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.*') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
            wire:navigate>

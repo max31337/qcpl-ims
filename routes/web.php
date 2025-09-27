@@ -19,6 +19,15 @@ Route::middleware(['auth', 'verified'/*, 'check.role:admin,observer'*/])
     ->get('/admin/assets/reports', \App\Livewire\Assets\AssetReports::class)
     ->name('admin.assets.reports');
 
+// Supplies Management Routes
+Route::middleware(['auth', 'verified'])->prefix('supplies')->name('supplies.')->group(function () {
+    Route::get('/', \App\Livewire\Supplies\SupplyList::class)->name('index');
+    Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
+    Route::get('/{id}/edit', \App\Livewire\Supplies\SupplyForm::class)->name('edit');
+    Route::get('/{id}/adjust', \App\Livewire\Supplies\StockAdjustment::class)->name('adjust');
+    Route::get('/reports', \App\Livewire\Supplies\SupplyReports::class)->name('reports');
+});
+
 // Assets Management Routes
 Route::middleware(['auth', 'verified'])->prefix('assets')->name('assets.')->group(function () {
     Route::get('/', \App\Livewire\Assets\AssetList::class)->name('index');

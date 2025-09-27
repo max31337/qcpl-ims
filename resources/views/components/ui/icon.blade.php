@@ -27,6 +27,13 @@
     'chevron-left' => '<path d="m15 18-6-6 6-6"/>',
     'info' => '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
     'circle' => '<circle cx="12" cy="12" r="10"/>',
+    // Added commonly used Lucide icons
+    'package' => '<path d="M16.5 9.4 7.5 4.21"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 2 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 22 16Z"/><path d="M3.27 6.96 12 12.01l8.73-5.05"/><path d="M12 22V12"/>',
+    'plus' => '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    'arrow-up-down' => '<path d="m21 16-4 4-4-4"/><path d="M17 20V4"/><path d="m3 8 4-4 4 4"/><path d="M7 4v16"/>',
+    'pencil' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/>',
+    'arrow-left' => '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+    'bar-chart' => '<path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="12" y="9" width="3" height="9" rx="1"/><rect x="17" y="5" width="3" height="13" rx="1"/>'
   ];
   $path = $paths[$name] ?? $paths['circle'];
 @endphp

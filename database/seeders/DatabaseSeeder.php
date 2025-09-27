@@ -33,10 +33,16 @@ class DatabaseSeeder extends Seeder
             Category::firstOrCreate(['name' => $cat['name'], 'type' => $cat['type']], $cat);
         }
 
+        // Supply categories (toiletries and cleaning consumables)
+        $this->call(SupplyCategorySeeder::class);
+
         // Default admin (idempotent)
         $this->call(AdminUserSeeder::class);
 
         // Demo assets with images (idempotent; links to files under storage/app/public/assets)
         $this->call(AssetDemoSeeder::class);
+
+        // Demo supplies (idempotent; toiletries and cleaning materials)
+        $this->call(SupplyDemoSeeder::class);
     }
 }

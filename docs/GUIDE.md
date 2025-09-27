@@ -115,7 +115,15 @@ Schema::create('categories', function (Blueprint $table) {
 
 // Seed default categories
 // Assets: Furnitures, Books, IT Equipment, Office Equipment
-// Supplies: (user-defined)
+// Supplies: Add some initial categories (recommended)
+// Example seeder snippet:
+Category::insert([
+  ['name' => 'Office Supplies', 'type' => 'supply', 'is_default' => true, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+  ['name' => 'Janitorial', 'type' => 'supply', 'is_default' => false, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+  ['name' => 'Printing & Paper', 'type' => 'supply', 'is_default' => false, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+  ['name' => 'Pantry', 'type' => 'supply', 'is_default' => false, 'is_active' => true, 'created_at' => now(), 'updated_at' => now()],
+]);
+// Note: The Supply creation form lists only categories where type = 'supply'. If nothing shows, seed or create supply categories first (Admin > Categories).
 ```
 
 #### assets (Properties)
@@ -170,6 +178,22 @@ Schema::create('supplies', function (Blueprint $table) {
     $table->timestamps();
 });
 ```
+
+// Recommended extension for stock auditability and balance checks
+// Supply movements (Kardex) — enables running balance, valuation, and reconciliation
+Schema::create('supply_movements', function (Blueprint $table) {
+  $table->id();
+  $table->foreignId('supply_id')->constrained();
+  $table->foreignId('branch_id')->constrained();
+  $table->enum('type', ['receive','issue','adjust_in','adjust_out','transfer_in','transfer_out']);
+  $table->integer('quantity'); // positive values only; use type to indicate direction
+  $table->decimal('unit_cost', 12, 2)->nullable(); // cost for receive/transfer_in (used for moving average)
+  $table->string('reference_no')->nullable();
+  $table->text('remarks')->nullable();
+  $table->foreignId('created_by')->constrained('users');
+  $table->timestamp('created_at');
+  $table->index(['supply_id','branch_id','created_at']);
+});
 
 #### asset_transfer_histories
 ```php
@@ -339,7 +363,151 @@ app/Http/Livewire/Supplies/
 ├── SupplyForm.php         // Create/Edit supply form
 ├── StockAdjustment.php    // Adjust stock levels
 └── SupplyReports.php      // Generate and export reports
+// Recommended additions
+// ├── Receive.php         // Record stock receipts (increments and moving average)
+// ├── Issue.php           // Record issues/consumptions (decrements)
+// └── StockCard.php       // Per-supply movement history + running balance (Kardex)
 ```
+
+## Supply Management (End-to-End)
+
+This section defines a complete, auditable process for supplies: master data, stock movements, balances, valuation, alerts, and reports. It aligns with QCPL’s branch isolation and roles.
+
+### 1) Master Data: Supplies and Categories
+- Supplies represent a SKU (e.g., Bond Paper A4 80gsm, Hand Soap 500ml).
+- Each supply belongs to a Category with type = 'supply'. Seed at least a few supply categories; otherwise, the Supply form’s Category dropdown will be empty.
+- Fields on `supplies`: supply_number (SUP-001), description, category_id, branch_id (owning branch), unit_cost (default/last cost), current_stock, min_stock, status, last_updated.
+
+Notes on branch_id:
+- If supplies are tracked per-branch, create the supply under that branch and keep `branch_id` fixed. For inter-branch transfers, record a pair of movements (transfer_out at origin, transfer_in at target), and update each branch’s stock separately.
+
+### 2) Transactions: Supply Movements (Kardex)
+
+Define a `supply_movements` table to record every stock event. This enables:
+- Running balance (by branch), traceable history, and reconciliation.
+- Valuation using Moving Average Cost (recommended).
+
+Movement types and effects:
+- receive (IN): quantity increases; sets or updates moving average using `unit_cost`.
+- transfer_in (IN): increases; `unit_cost` comes from origin or last known average.
+- issue (OUT): decreases; cost taken from current moving average.
+- adjust_in (IN) / adjust_out (OUT): manual corrections; include remarks.
+- transfer_out (OUT): decreases at origin.
+
+Business rules:
+- Prevent negative stock: do not allow OUT to drive running balance below zero.
+- Consistency: after each movement, update `supplies.current_stock` and `supplies.last_updated` for fast list queries.
+- Logging: write an `activity_logs` row for auditing (who did what and when).
+
+### 3) Balances and Valuation
+
+- Running balance per branch is the signed sum of movements:
+  balance = (receive + transfer_in + adjust_in) - (issue + transfer_out + adjust_out)
+- Maintain `supplies.current_stock` as the current on-hand for quick UI. Periodically reconcile with movements.
+- Valuation method: Moving Average Cost
+  - On receive/transfer_in, recompute moving average:
+    new_avg = (old_qty*old_avg + in_qty*in_cost) / (old_qty + in_qty)
+  - `supplies.unit_cost` may store the current moving average for reporting; or keep a dedicated `moving_avg_cost` field.
+- Inventory value = current_stock * moving_avg_cost.
+
+### 4) Low Stock and Out of Stock
+
+Criteria:
+- Low Stock: current_stock < min_stock
+- Out of Stock: current_stock = 0
+
+Queries (branch-scoped):
+```php
+$user = auth()->user();
+$low = Supply::forUser($user)
+  ->whereColumn('current_stock','<','min_stock')
+  ->orderByRaw('(current_stock - min_stock) asc')
+  ->get(['id','supply_number','description','current_stock','min_stock']);
+
+$out = Supply::forUser($user)
+  ->where('current_stock', 0)
+  ->get(['id','supply_number','description']);
+```
+
+UI guidance:
+- On SupplyList, highlight low/out-of-stock rows and provide quick links to Receive/Adjust.
+- Add filters for status, category, and low/out flags.
+
+### 5) Reports and Balance Checking
+
+Core reports:
+- Stock Card (Kardex) — per supply, chronological movements with running balance and (if implemented) moving average and line values.
+- Low Stock Report — list of supplies below min_stock, with suggested reorder qty (min_stock - current_stock).
+- Out of Stock Report — list of zero on-hand.
+- Inventory Valuation — by branch and category; totals for units and value.
+- Balance Check — reconciles `supplies.current_stock` versus sum of movements; lists discrepancies.
+
+Example: Inventory Valuation (branch-scoped)
+```php
+$user = auth()->user();
+$q = Supply::forUser($user);
+$byCategory = $q->selectRaw('category_id, COUNT(*) items, SUM(current_stock) units, SUM(current_stock * unit_cost) value')
+  ->groupBy('category_id')
+  ->with('category:id,name')
+  ->get();
+$totals = $q->selectRaw('COUNT(*) items, SUM(current_stock) units, SUM(current_stock * unit_cost) value')->first();
+```
+
+Example: Balance Check vs Movements
+```php
+// Expected balance from movements (by supply and branch)
+$expected = DB::table('supply_movements')
+  ->select('supply_id','branch_id')
+  ->selectRaw("SUM(CASE WHEN type IN ('receive','transfer_in','adjust_in') THEN quantity ELSE 0 END) - \n            SUM(CASE WHEN type IN ('issue','transfer_out','adjust_out') THEN quantity ELSE 0 END) AS balance")
+  ->groupBy('supply_id','branch_id');
+
+$discrepancies = DB::table('supplies as s')
+  ->joinSub($expected, 'e', function($j) { $j->on('e.supply_id','=','s.id')->on('e.branch_id','=','s.branch_id'); })
+  ->whereColumn('s.current_stock','<>','e.balance')
+  ->get(['s.id','s.supply_number','s.description','s.current_stock','e.balance']);
+```
+
+Exports:
+- Use Maatwebsite\Excel or streamed CSV for large datasets. Always apply `Supply::forUser()` and paginate when rendering tables.
+
+PDFs:
+- Keep to simple tables for reliability. Avoid images if GD is unavailable.
+
+### 6) Livewire Flows (Recommended)
+
+- SupplyList: search, filters (status/category/low/out), pagination, quick actions (Receive, Issue, Adjust, Edit, Reports).
+- SupplyForm: create/edit SKU; auto-generate `supply_number` (SUP-001), choose Category (type='supply').
+- Receive: date, reference_no, supplier (optional), qty, unit_cost, remarks → records movement and updates stock and moving average.
+- Issue: date, reference_no, destination (optional), qty, remarks → records movement and updates stock.
+- Adjust: delta qty (positive/negative), reason/remarks → movement + update; prevent negative ending.
+- StockCard: shows movements with running balance and value; export CSV/XLSX.
+- SupplyReports: filters + KPI tiles (items, units on hand, on-hand value) + tables (by category/branch) + exports (CSV/XLSX).
+
+### 7) Roles and Scoping
+
+- Access
+  - Admin, Supply Officer: full supply management.
+  - Observer: read-only reports.
+- Scoping
+  - Always use `Supply::forUser($user)` in queries to enforce branch isolation. Main-branch admins/observers see all.
+
+### 8) Data Integrity and Performance
+
+- Prevent negative stock on OUT operations.
+- Indexes: supplies(branch_id), supplies(status), supplies(last_updated); movements(supply_id, branch_id, created_at).
+- Reconciliation task: schedule a nightly job to compare `supplies.current_stock` vs movement sums and log discrepancies.
+
+### 9) Testing (Supplies)
+
+Feature tests
+- Create/Edit supply with category type 'supply'.
+- Stock receive/issue/adjust flows; ensure branch scoping and negative checks.
+- Low and out-of-stock listings.
+- Reports export and totals match calculated values.
+
+Unit tests
+- Movement math (running balance, moving average).
+- ScopeForUser behavior across roles and branches.
 
 ### Admin Components
 ```
