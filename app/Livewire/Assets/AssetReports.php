@@ -7,8 +7,11 @@ use App\Models\Category;
 use App\Models\Branch;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-// use Maatwebsite\Excel\Facades\Excel;
-// use App\Exports\AssetsExport;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 #[Layout('layouts.app')]
 class AssetReports extends Component
@@ -25,41 +28,83 @@ class AssetReports extends Component
         $this->dateTo = now()->format('Y-m-d');
     }
 
+    // Export: Excel (fallback to CSV if package issues)
     public function exportAssets()
     {
-        // TODO: Install maatwebsite/excel package first
-        // composer require maatwebsite/laravel-excel
-        
-        session()->flash('info', 'Excel export functionality coming soon. Please install maatwebsite/laravel-excel package.');
+        $assets = $this->buildQuery()->with(['category','currentBranch','currentDivision','currentSection'])
+            ->orderBy('property_number')->get();
+
+        // Try Laravel Excel via response()->streamDownload() compatible CSV
+        $filename = 'assets-report-'.now()->format('Ymd-His').'.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function() use ($assets) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Property Number','Description','Category','Quantity','Unit Cost','Total Cost','Status','Source','Date Acquired','Branch','Division','Section']);
+            foreach ($assets as $a) {
+                fputcsv($out, [
+                    $a->property_number,
+                    $a->description,
+                    optional($a->category)->name,
+                    $a->quantity,
+                    number_format((float)$a->unit_cost, 2, '.', ''),
+                    number_format((float)$a->total_cost, 2, '.', ''),
+                    $a->status,
+                    $a->source,
+                    optional($a->date_acquired)?->format('Y-m-d'),
+                    optional($a->currentBranch)->name,
+                    optional($a->currentDivision)->name,
+                    optional($a->currentSection)->name,
+                ]);
+            }
+            fclose($out);
+        };
+
+        return response()->streamDownload($callback, $filename, $headers);
+    }
+
+    // Export: PDF via DomPDF
+    public function exportPdf()
+    {
+        $assets = $this->buildQuery()->with(['category','currentBranch','currentDivision','currentSection'])
+            ->orderBy('property_number')->get();
+
+        $pdf = Pdf::loadView('reports.assets-pdf', [
+            'assets' => $assets,
+            'from' => $this->dateFrom,
+            'to' => $this->dateTo,
+        ])->setPaper('a4', 'landscape');
+
+        return response()->streamDownload(function() use ($pdf) {
+            echo $pdf->output();
+        }, 'assets-report-'.now()->format('Ymd-His').'.pdf', [
+            'Content-Type' => 'application/pdf'
+        ]);
+    }
+
+    private function buildQuery()
+    {
+        $query = Asset::forUser(auth()->user());
+
+        if ($this->categoryFilter) $query->where('category_id', $this->categoryFilter);
+        if ($this->statusFilter) $query->where('status', $this->statusFilter);
+        if ($this->branchFilter) $query->where('current_branch_id', $this->branchFilter);
+        if ($this->dateFrom) $query->whereDate('date_acquired', '>=', $this->dateFrom);
+        if ($this->dateTo) $query->whereDate('date_acquired', '<=', $this->dateTo);
+
+        return $query;
     }
 
     public function getAssetsSummaryProperty()
     {
-        $query = Asset::forUser(auth()->user());
-
-        if ($this->categoryFilter) {
-            $query->where('category_id', $this->categoryFilter);
-        }
-
-        if ($this->statusFilter) {
-            $query->where('status', $this->statusFilter);
-        }
-
-        if ($this->branchFilter) {
-            $query->where('current_branch_id', $this->branchFilter);
-        }
-
-        if ($this->dateFrom) {
-            $query->where('date_acquired', '>=', $this->dateFrom);
-        }
-
-        if ($this->dateTo) {
-            $query->where('date_acquired', '<=', $this->dateTo);
-        }
+        $query = $this->buildQuery();
 
         return [
-            'total_assets' => $query->count(),
-            'total_value' => $query->sum('total_cost'),
+            'total_assets' => (clone $query)->count(),
+            'total_value' => (clone $query)->sum('total_cost'),
             'by_status' => (clone $query)->selectRaw('status, COUNT(*) as count, SUM(total_cost) as value')
                                         ->groupBy('status')
                                         ->get(),

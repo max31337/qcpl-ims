@@ -14,6 +14,11 @@ Route::get('/admin/invitations', UserManagement::class)
     ->middleware(['auth', 'verified'])
     ->name('admin.invitations');
 
+// Admin - Assets Reports
+Route::middleware(['auth', 'verified'/*, 'check.role:admin,observer'*/])
+    ->get('/admin/assets/reports', \App\Livewire\Assets\AssetReports::class)
+    ->name('admin.assets.reports');
+
 // Assets Management Routes
 Route::middleware(['auth', 'verified'])->prefix('assets')->name('assets.')->group(function () {
     Route::get('/', \App\Livewire\Assets\AssetList::class)->name('index');
