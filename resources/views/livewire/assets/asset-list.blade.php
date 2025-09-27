@@ -206,26 +206,26 @@
             @endforeach
         </div>
         @else
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="overflow-x-hidden">
+            <table class="w-full table-fixed divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property #</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Property #</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Category</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Qty</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Cost</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($assets as $asset)
                     <tr class="hover:bg-gray-50 cursor-pointer" wire:click="openDetailsModal({{ $asset->id }})">
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-3">
                             <span class="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded">{{ $asset->property_number }}</span>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap">
+                        <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
                                 @if($asset->image_path)
                                     <div class="h-10 w-10 rounded-md overflow-hidden bg-muted border relative">
@@ -235,7 +235,7 @@
                                     <div class="h-10 w-10 rounded-md bg-muted border"></div>
                                 @endif
                                 <div>
-                                    <div class="font-medium">{{ $asset->description }}</div>
+                                    <div class="font-medium truncate max-w-[28ch]">{{ $asset->description }}</div>
                                     <div class="text-xs text-muted-foreground">Status:
                                         <span class="px-1.5 py-0.5 rounded"
                                               @class([
@@ -249,10 +249,10 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-700">{{ $asset->category->name }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">{{ $asset->currentBranch->name }} • {{ $asset->currentDivision->name }} • {{ $asset->currentSection->name }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm">{{ $asset->quantity }}</td>
-                        <td class="px-4 py-3 whitespace-nowrap text-sm">₱{{ number_format($asset->total_cost, 2) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $asset->category->name }}</td>
+                        <td class="px-4 py-3 text-xs text-muted-foreground truncate max-w-[40ch]">{{ $asset->currentBranch->name }} • {{ $asset->currentDivision->name }} • {{ $asset->currentSection->name }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $asset->quantity }}</td>
+                        <td class="px-4 py-3 text-sm">₱{{ number_format($asset->total_cost, 2) }}</td>
                         <td class="px-4 py-3 whitespace-nowrap text-right">
                             <div class="flex justify-end gap-2">
                                 <button wire:click.stop="history({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">

@@ -14,15 +14,15 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        <div class="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+    <body class="font-sans antialiased bg-background text-foreground overflow-x-hidden">
+        <div class="grid min-h-screen w-full md:grid-cols:[220px_1fr] lg:grid-cols:[280px_1fr] md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             {{-- Sidebar --}}
-            <div class="hidden border-r bg-muted/40 md:block">
+            <div class="hidden border-r bg-muted/40 md:block sticky top-0 h-screen overflow-hidden">
                 @includeWhen(View::exists('livewire.admin._sidebar'), 'livewire.admin._sidebar')
             </div>
             
             {{-- Main content area --}}
-            <div class="flex flex-col">
+            <div class="flex flex-col h-screen overflow-hidden">
                 <livewire:layout.navigation />
                 
                 {{-- Breadcrumbs --}}
@@ -31,7 +31,7 @@
                 </div>
                 
                 {{-- Page content --}}
-                <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
+                <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 container overflow-y-auto">
                     {{ $slot }}
                 </main>
             </div>

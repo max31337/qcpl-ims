@@ -9,29 +9,15 @@
 
     <!-- Flash Messages -->
     @if (session()->has('success'))
-        <div class="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-            <div class="flex">
-                <svg class="h-4 w-4 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-                <div class="ml-3">
-                    {{ session('success') }}
-                </div>
-            </div>
-        </div>
+        <x-ui.alert variant="success" icon="check">
+            {{ session('success') }}
+        </x-ui.alert>
     @endif
 
     @if (session()->has('error'))
-        <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-            <div class="flex">
-                <svg class="h-4 w-4 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-                <div class="ml-3">
-                    {{ session('error') }}
-                </div>
-            </div>
-        </div>
+        <x-ui.alert variant="destructive" icon="x">
+            {{ session('error') }}
+        </x-ui.alert>
     @endif
 
     <!-- Tabs -->
@@ -148,10 +134,8 @@
                         <p class="mt-1 text-sm text-gray-600">Manage invitations sent to users</p>
                     </div>
                     <button wire:click="$set('showInviteModal', true)"
-                        class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                        </svg>
+                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                        <x-ui.icon name="user-plus" class="mr-2 h-4 w-4" />
                         Send Invitation
                     </button>
                 </div>
@@ -205,15 +189,23 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                     @if($invitation->status === 'pending')
                                         <button wire:click="resendInvitation({{ $invitation->id }})"
-                                            class="text-blue-600 hover:text-blue-900">Resend</button>
+                                            class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800">
+                                            <x-ui.icon name="refresh-ccw" /> Resend
+                                        </button>
                                         <button wire:click="deleteInvitation({{ $invitation->id }})"
-                                            class="text-red-600 hover:text-red-900"
-                                            onclick="return confirm('Are you sure?')">Delete</button>
+                                            class="inline-flex items-center gap-1 text-red-600 hover:text-red-800"
+                                            onclick="return confirm('Are you sure?')">
+                                            <x-ui.icon name="trash-2" /> Delete
+                                        </button>
                                     @elseif($invitation->status === 'registered' && $invitation->user)
                                         <button wire:click="openApprovalModal({{ $invitation->id }}, 'approve')"
-                                            class="text-green-600 hover:text-green-900">Approve</button>
+                                            class="inline-flex items-center gap-1 text-green-600 hover:text-green-800">
+                                            <x-ui.icon name="user-check" /> Approve
+                                        </button>
                                         <button wire:click="openApprovalModal({{ $invitation->id }}, 'reject')"
-                                            class="text-red-600 hover:text-red-900">Reject</button>
+                                            class="inline-flex items-center gap-1 text-red-600 hover:text-red-800">
+                                            <x-ui.icon name="user-x" /> Reject
+                                        </button>
                                     @endif
                                 </td>
                             </tr>
@@ -308,17 +300,25 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                                     @if(!$user->is_active)
                                         <button wire:click="openUserModal({{ $user->id }}, 'activate')"
-                                            class="text-green-600 hover:text-green-900">Activate</button>
+                                            class="inline-flex items-center gap-1 text-green-600 hover:text-green-800">
+                                            <x-ui.icon name="shield-check" /> Activate
+                                        </button>
                                     @else
                                         <button wire:click="openUserModal({{ $user->id }}, 'deactivate')"
-                                            class="text-red-600 hover:text-red-900">Deactivate</button>
+                                            class="inline-flex items-center gap-1 text-red-600 hover:text-red-800">
+                                            <x-ui.icon name="shield-x" /> Deactivate
+                                        </button>
                                     @endif
 
                                     @if($user->approval_status === 'pending')
                                         <button wire:click="openUserModal({{ $user->id }}, 'approve')"
-                                            class="text-blue-600 hover:text-blue-900">Approve</button>
+                                            class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800">
+                                            <x-ui.icon name="user-check" /> Approve
+                                        </button>
                                         <button wire:click="openUserModal({{ $user->id }}, 'reject')"
-                                            class="text-red-600 hover:text-red-900">Reject</button>
+                                            class="inline-flex items-center gap-1 text-red-600 hover:text-red-800">
+                                            <x-ui.icon name="user-x" /> Reject
+                                        </button>
                                     @endif
                                 </td>
                             </tr>
@@ -341,40 +341,37 @@
 
     <!-- Request Approval Modal -->
     @if($showRequestModal && $selectedRequest)
-        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-md rounded-lg bg-background border-border">
                 <div class="mt-3">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">
+                    <h3 class="text-lg font-semibold text-foreground mb-4">
                         {{ $requestAction === 'approve' ? 'Approve' : 'Reject' }} Access Request
                     </h3>
 
-                    <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <div class="mb-4 p-3 bg-muted rounded-lg">
                         <div class="text-sm">
-                            <div><strong>Name:</strong> {{ $selectedRequest->full_name }}</div>
-                            <div><strong>Email:</strong> {{ $selectedRequest->email }}</div>
-                            <div><strong>Department:</strong> {{ $selectedRequest->department ?: 'Not specified' }}</div>
-                            <div><strong>Reason:</strong> {{ Str::limit($selectedRequest->reason, 100) }}</div>
+                            <div><span class="font-medium">Name:</span> {{ $selectedRequest->full_name }}</div>
+                            <div><span class="font-medium">Email:</span> {{ $selectedRequest->email }}</div>
+                            <div><span class="font-medium">Department:</span> {{ $selectedRequest->department ?: 'Not specified' }}</div>
+                            <div><span class="font-medium">Reason:</span> {{ Str::limit($selectedRequest->reason, 100) }}</div>
                         </div>
                     </div>
 
                     <form wire:submit="{{ $requestAction === 'approve' ? 'approveRequest' : 'rejectRequest' }}({{ $selectedRequest->id }})">
                         <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <label class="block text-sm font-medium text-foreground mb-2">
                                 {{ $requestAction === 'approve' ? 'Approval' : 'Rejection' }} Notes (Optional)
                             </label>
-                            <textarea wire:model="requestNotes" rows="3"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                placeholder="Add notes for the user..."></textarea>
+                            <x-ui.textarea wire:model="requestNotes" rows="3" placeholder="Add notes for the user..." />
                         </div>
 
                         <div class="flex justify-end space-x-3">
                             <button type="button" wire:click="resetRequestModal"
-                                class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">
+                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
                                 Cancel
                             </button>
                             <button type="submit"
-                                class="px-4 py-2 text-sm font-medium text-white rounded-md
-                                    {{ $requestAction === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700' }}">
+                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-9 px-3 {{ $requestAction === 'approve' ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-red-600 text-white hover:bg-red-700' }}">
                                 {{ $requestAction === 'approve' ? 'Approve & Send Invitation' : 'Reject Request' }}
                             </button>
                         </div>
@@ -386,16 +383,15 @@
 
     <!-- Send Invitation Modal -->
     @if($showInviteModal)
-        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="fixed inset-0 bg-black/50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-md rounded-lg bg-background border-border">
                 <div class="mt-3">
-                    <h3 class="text-lg font-medium text-gray-900 mb-4">Send User Invitation</h3>
+                    <h3 class="text-lg font-semibold text-foreground mb-4">Send User Invitation</h3>
 
                     <form wire:submit="sendInvitation">
                         <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
-                            <input wire:model="email" type="email" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <x-ui.label>Email Address</x-ui.label>
+                            <x-ui.input wire:model="email" type="email" required />
                             @error('email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
 
