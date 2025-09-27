@@ -16,7 +16,11 @@ $variants = [
 <div {{ $attributes->merge(['class' => 'rounded-lg border p-4 text-sm '.$variants[$variant]]) }}>
   <div class="flex items-start gap-3">
     @if($icon)
-      <x-ui.icon :name="$icon" class="h-4 w-4 mt-0.5" />
+      @if($icon instanceof \Illuminate\View\ComponentSlot)
+        {!! $icon !!}
+      @else
+        <x-ui.icon :name="$icon" class="h-4 w-4 mt-0.5" />
+      @endif
     @endif
     <div class="space-y-1">
       {{ $slot }}

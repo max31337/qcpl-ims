@@ -24,6 +24,8 @@
     'shield-check' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
     'shield-x' => '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m14.5 9.5-5 5"/><path d="m9.5 9.5 5 5"/>',
     'chevron-right' => '<path d="m9 18 6-6-6-6"/>',
+    'chevron-left' => '<path d="m15 18-6-6 6-6"/>',
+    'info' => '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
     'circle' => '<circle cx="12" cy="12" r="10"/>',
   ];
   $path = $paths[$name] ?? $paths['circle'];
