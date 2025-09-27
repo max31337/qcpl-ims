@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\UserManagement;
 // Admin Dashboard (Livewire)
-use App\Http\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Dashboard as AdminDashboard;
 
 Route::view('/', 'welcome')->name('welcome');
 

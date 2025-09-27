@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire\Admin;
+namespace App\Livewire\Admin;
 
 use App\Models\ActivityLog;
 use App\Models\Asset;
@@ -30,8 +30,8 @@ class Dashboard extends Component
     {
         $user = Auth::user();
         // Cache key includes filters
-    // Bump cache key version when payload structure changes
-    $key = sprintf('admin_dash_v2:%s:%s:%s', $this->from, $this->to, $this->branchId ?? 'all');
+        // Bump cache key version when payload structure changes
+        $key = sprintf('admin_dash_v2:%s:%s:%s', $this->from, $this->to, $this->branchId ?? 'all');
         $data = Cache::remember($key, 600, function () use ($user) {
             $assetsQuery = Asset::query();
             $suppliesQuery = Supply::query();
@@ -133,15 +133,15 @@ class Dashboard extends Component
                 ->whereColumn('current_stock', '>=', 'min_stock')
                 ->count();
 
-                // Top supply categories by value (name + v, matching blade)
-                $topSupplyCategories = (clone $suppliesQuery)
-                    ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
-                    ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, SUM(current_stock*unit_cost) as v")
-                    // Group by the underlying column for compatibility across drivers
-                    ->groupBy('categories.name')
-                    ->orderByDesc('v')
-                    ->limit(5)
-                    ->get();
+            // Top supply categories by value (name + v, matching blade)
+            $topSupplyCategories = (clone $suppliesQuery)
+                ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
+                ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, SUM(current_stock*unit_cost) as v")
+                // Group by the underlying column for compatibility across drivers
+                ->groupBy('categories.name')
+                ->orderByDesc('v')
+                ->limit(5)
+                ->get();
 
             // Top transfer routes
             $topRoutes = (clone $transfers)
