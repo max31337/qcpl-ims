@@ -41,9 +41,16 @@ class AssetReports extends Component
             'Content-Disposition' => "attachment; filename=\"$filename\"",
         ];
 
-        $callback = function() use ($assets) {
+        $noDataMessage = $this->noDataMessage();
+
+        $callback = function() use ($assets, $noDataMessage) {
             $out = fopen('php://output', 'w');
             fputcsv($out, ['Property Number','Description','Category','Quantity','Unit Cost','Total Cost','Status','Source','Date Acquired','Branch','Division','Section']);
+            if ($assets->isEmpty()) {
+                fputcsv($out, [$noDataMessage]);
+                fclose($out);
+                return;
+            }
             foreach ($assets as $a) {
                 fputcsv($out, [
                     $a->property_number,
@@ -76,6 +83,8 @@ class AssetReports extends Component
             'assets' => $assets,
             'from' => $this->dateFrom,
             'to' => $this->dateTo,
+            'noDataMessage' => $this->noDataMessage(),
+            'filters' => $this->currentFiltersSummary(),
         ])->setPaper('a4', 'landscape');
 
         return response()->streamDownload(function() use ($pdf) {
@@ -155,6 +164,36 @@ class AssetReports extends Component
             return Branch::where('is_active', true)->orderBy('name')->get();
         }
         return Branch::where('id', $user->branch_id)->get();
+    }
+
+    private function noDataMessage(): string
+    {
+        $parts = [];
+        if ($this->dateFrom || $this->dateTo) {
+            $parts[] = 'selected date range';
+        }
+        if ($this->categoryFilter) $parts[] = 'category';
+        if ($this->statusFilter) $parts[] = 'status';
+        if ($this->branchFilter) $parts[] = 'branch';
+        if ($this->divisionFilter) $parts[] = 'division';
+        if ($this->sectionFilter) $parts[] = 'section';
+        $suffix = $parts ? (' for the '.implode(', ', $parts)) : '';
+        return 'No asset records available'.$suffix.'.';
+    }
+
+    private function currentFiltersSummary(): array
+    {
+        return [
+            'date' => [
+                'from' => $this->dateFrom,
+                'to' => $this->dateTo,
+            ],
+            'category' => $this->categoryFilter,
+            'status' => $this->statusFilter,
+            'branch' => $this->branchFilter,
+            'division' => $this->divisionFilter,
+            'section' => $this->sectionFilter,
+        ];
     }
 
     public function render()

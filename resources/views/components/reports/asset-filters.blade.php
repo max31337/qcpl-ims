@@ -58,8 +58,4 @@
       @endforeach
     </select>
   </div>
-  <div class="flex items-end">
-    <button wire:click="exportAssets" class="h-10 rounded-md border px-3 text-sm hover:bg-accent">Download Excel</button>
-    <button wire:click="exportPdf" class="ml-2 h-10 rounded-md border px-3 text-sm hover:bg-accent">Print PDF</button>
-  </div>
 </div>
