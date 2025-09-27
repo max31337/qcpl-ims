@@ -42,7 +42,8 @@ class LoginForm extends Form
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'form.email' => trans('auth.failed'),
+                // Show invalid credentials beneath the password field
+                'form.password' => trans('auth.failed'),
             ]);
         }
 
@@ -62,8 +63,10 @@ class LoginForm extends Form
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 
+        // Prevent duplicate red throttle message; client shows a live countdown instead.
+        // We still throw to stop processing, but attach to a non-rendered key.
         throw ValidationException::withMessages([
-            'form.email' => trans('auth.throttle', [
+            'throttle' => trans('auth.throttle', [
                 'seconds' => $seconds,
                 'minutes' => ceil($seconds / 60),
             ]),
@@ -75,7 +78,8 @@ class LoginForm extends Form
      */
     protected function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
+        // IP-scoped lockout to prevent bypassing by changing/clearing the email field or refreshing.
+        return 'login:'.request()->ip();
     }
 
     /**

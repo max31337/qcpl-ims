@@ -6,6 +6,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
+use Illuminate\Validation\ValidationException;
 
 new #[Layout('layouts.guest')] class extends Component
 {
@@ -18,7 +19,16 @@ new #[Layout('layouts.guest')] class extends Component
     {
         $this->validate();
 
-        $this->form->authenticate();
+        try {
+            $this->form->authenticate();
+        } catch (ValidationException $e) {
+            // If a throttle is in effect, inform the client with an absolute timestamp
+            if ($this->isThrottled()) {
+                $remaining = $this->throttleRemaining();
+                $this->dispatch('login-throttle', lockUntil: now()->addSeconds($remaining)->timestamp);
+            }
+            throw $e;
+        }
 
         Session::regenerate();
 
@@ -28,13 +38,13 @@ new #[Layout('layouts.guest')] class extends Component
     // Expose throttle info to the view so Alpine can initialize a countdown.
     public function throttleRemaining(): int
     {
-        $key = Str::transliterate(Str::lower($this->form->email).'|'.request()->ip());
+        $key = 'login:'.request()->ip();
         return RateLimiter::availableIn($key);
     }
 
     public function isThrottled(): bool
     {
-        $key = Str::transliterate(Str::lower($this->form->email).'|'.request()->ip());
+        $key = 'login:'.request()->ip();
         return RateLimiter::tooManyAttempts($key, 5);
     }
 }; ?>
@@ -56,20 +66,7 @@ new #[Layout('layouts.guest')] class extends Component
             </x-ui.alert>
         @endif
 
-                <form wire:submit="login" class="space-y-5"
-                            x-data="{
-                                remaining: {{ (int) $this->throttleRemaining() }},
-                                interval: null,
-                                start() {
-                                    if (this.remaining > 0) {
-                                        this.interval = setInterval(() => {
-                                            if (this.remaining > 0) this.remaining--;
-                                            if (this.remaining <= 0 && this.interval) { clearInterval(this.interval); this.interval = null; }
-                                        }, 1000);
-                                    }
-                                }
-                            }"
-                            x-init="start()">
+        <form wire:submit="login" class="space-y-5">
             <!-- Email or Username -->
             <div>
                 <x-ui.label for="email" required>Email or Username</x-ui.label>
@@ -82,6 +79,10 @@ new #[Layout('layouts.guest')] class extends Component
                 <x-ui.label for="password" required>Password</x-ui.label>
                 <x-ui.input wire:model="form.password" id="password" name="password" type="password" required autocomplete="current-password" placeholder="Enter your password" class="mt-2" />
                 <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
+                <!-- Throttle live message placed under password to avoid duplicate red alert -->
+                <p id="login-throttle-msg" class="text-xs text-muted-foreground text-left hidden mt-2">
+                    Too many attempts. Please wait <span id="login-countdown"></span> seconds before trying again.
+                </p>
             </div>
 
             <div class="flex items-center justify-between">
@@ -99,18 +100,14 @@ new #[Layout('layouts.guest')] class extends Component
             </div>
 
             <div class="space-y-2">
-                <x-ui.button type="submit" class="w-full" x-bind:disabled="remaining > 0">
+                <x-ui.button id="login-submit" type="submit" class="w-full">
                     <x-ui.icon name="check" class="w-4 h-4 mr-2" />
-                    <span x-show="remaining <= 0">{{ __('Sign in') }}</span>
-                    <span x-show="remaining > 0">{{ __('Try again in') }} <span x-text="remaining"></span>s</span>
+                    <span id="login-button-label">{{ __('Sign in') }}</span>
                 </x-ui.button>
-
-                <template x-if="remaining > 0">
-                    <p class="text-xs text-muted-foreground text-center">
-                        Too many attempts. Please wait <span x-text="remaining"></span> seconds before trying again.
-                    </p>
-                </template>
             </div>
+
+            <!-- Initial lock-until timestamp for countdown bootstrap -->
+            <span id="login-lock-until" class="hidden" data-lock-until="{{ ($this->throttleRemaining() > 0) ? now()->addSeconds($this->throttleRemaining())->timestamp : 0 }}"></span>
 
             <div class="text-center">
                 <div class="flex items-center justify-center text-sm text-muted-foreground">
@@ -121,3 +118,66 @@ new #[Layout('layouts.guest')] class extends Component
         </form>
     </x-ui.card>
 </div>
+
+<script>
+// Server-driven countdown that survives Livewire updates and dev HMR.
+(function() {
+    const btn = () => document.getElementById('login-submit');
+    const label = () => document.getElementById('login-button-label');
+    const msg = () => document.getElementById('login-throttle-msg');
+    const out = () => document.getElementById('login-countdown');
+    const lockEl = () => document.getElementById('login-lock-until');
+
+    function setHidden(el, hidden) {
+        if (!el) return;
+        if (hidden) el.classList.add('hidden'); else el.classList.remove('hidden');
+    }
+
+    function startCountdown(lockUntilTs) {
+        if (!window.__loginCountdown) window.__loginCountdown = {};
+        if (window.__loginCountdown.timer) {
+            clearInterval(window.__loginCountdown.timer);
+            window.__loginCountdown.timer = null;
+        }
+        window.__loginCountdown.lockUntil = parseInt(lockUntilTs || 0, 10);
+
+        const update = () => {
+            const now = Math.floor(Date.now()/1000);
+            const remaining = Math.max(0, (window.__loginCountdown.lockUntil || 0) - now);
+            if (out()) out().textContent = String(remaining);
+            if (btn()) btn().disabled = remaining > 0;
+            if (label()) label().textContent = remaining > 0 ? ('Try again in ' + remaining + 's') : 'Sign in';
+            setHidden(msg(), !(remaining > 0));
+            if (remaining <= 0 && window.__loginCountdown.timer) {
+                clearInterval(window.__loginCountdown.timer);
+                window.__loginCountdown.timer = null;
+            }
+        };
+
+        update();
+        window.__loginCountdown.timer = setInterval(update, 1000);
+    }
+
+    // Listen for server-dispatched throttle event
+    window.addEventListener('login-throttle', function(e) {
+        const ts = e.detail && e.detail.lockUntil ? parseInt(e.detail.lockUntil, 10) : 0;
+        if (ts) startCountdown(ts);
+    });
+
+    // Bootstrap on initial load or after Livewire DOM changes
+    function bootstrapFromDom() {
+        const el = lockEl();
+        if (!el) return;
+        const ts = parseInt(el.getAttribute('data-lock-until') || '0', 10);
+        if (ts && ts > Math.floor(Date.now()/1000)) startCountdown(ts); else {
+            if (btn()) btn().disabled = false;
+            if (label()) label().textContent = 'Sign in';
+            setHidden(msg(), true);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', bootstrapFromDom);
+    // Livewire v3 fires this after navigation/updates
+    window.addEventListener('livewire:navigated', bootstrapFromDom);
+})();
+</script>
