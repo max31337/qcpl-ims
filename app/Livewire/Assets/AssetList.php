@@ -469,11 +469,25 @@ class AssetList extends Component
         $user = auth()->user();
         $q = AssetGroup::query()
             ->with(['category'])
+            // items_count should reflect filters (branch/status) so the count matches user expectation
             ->withCount(['assets as items_count' => function ($aq) use ($user) {
                 $aq->forUser($user);
+                if ($this->statusFilter) {
+                    $aq->where('status', $this->statusFilter);
+                }
+                if ($this->branchFilter) {
+                    $aq->where('current_branch_id', (int) $this->branchFilter);
+                }
             }])
             ->with(['assets' => function ($aq) use ($user) {
-                $aq->forUser($user)->select('id','asset_group_id','property_number','current_branch_id','current_division_id','current_section_id');
+                $aq->forUser($user)
+                   ->select('id','asset_group_id','property_number','current_branch_id','current_division_id','current_section_id','status');
+                if ($this->statusFilter) {
+                    $aq->where('status', $this->statusFilter);
+                }
+                if ($this->branchFilter) {
+                    $aq->where('current_branch_id', (int) $this->branchFilter);
+                }
             }]);
 
         // Apply filters on group fields + whereHas on assets for branch/recent scoping
@@ -491,7 +505,11 @@ class AssetList extends Component
         }
 
         if ($this->statusFilter) {
-            $q->where('status', $this->statusFilter);
+            // Filter groups that have at least one asset with the selected status
+            $status = $this->statusFilter;
+            $q->whereHas('assets', function ($aq) use ($status, $user) {
+                $aq->forUser($user)->where('status', $status);
+            });
         }
 
         if ($this->branchFilter) {
@@ -525,6 +543,8 @@ class AssetList extends Component
             ->with(['assets' => function ($aq) use ($user) {
                 $aq->forUser($user)
                    ->with(['currentBranch','currentDivision','currentSection'])
+                   ->when($this->statusFilter !== '', fn($w) => $w->where('status', $this->statusFilter))
+                   ->when($this->branchFilter !== '', fn($w) => $w->where('current_branch_id', (int) $this->branchFilter))
                    ->orderBy('property_number');
             }])
             ->findOrFail($groupId);

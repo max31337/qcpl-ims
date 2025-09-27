@@ -130,8 +130,8 @@
                 <x-ui.card class="p-6 hover:shadow-md transition-shadow cursor-pointer" wire:click="openGroupModal({{ $group->id }})">
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center gap-2">
-                            <x-ui.badge :variant="$group->status === 'active' ? 'success' : ($group->status === 'condemn' ? 'warning' : 'danger')">
-                                {{ ucfirst($group->status) }}
+                            <x-ui.badge :variant="($statusFilter ?: $group->status) === 'active' ? 'success' : (($statusFilter ?: $group->status) === 'condemn' ? 'warning' : 'danger')">
+                                {{ ucfirst($statusFilter ?: $group->status) }}
                             </x-ui.badge>
                         </div>
                         <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">{{ $group->items_count }} items</span>
@@ -184,16 +184,16 @@
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $group->category->name ?? '—' }}</td>
                         <td class="px-4 py-3 text-sm">{{ $group->items_count }}</td>
-                        <td class="px-4 py-3 text-xs text-muted-foreground">
-                            <span class="px-1.5 py-0.5 rounded"
-                                  @class([
-                                    'bg-green-100 text-green-800' => $group->status === 'active',
-                                    'bg-yellow-100 text-yellow-800' => $group->status === 'condemn',
-                                    'bg-red-100 text-red-800' => $group->status === 'disposed',
-                                  ])>
-                                {{ ucfirst($group->status) }}
-                            </span>
-                        </td>
+                                                <td class="px-4 py-3 text-xs text-muted-foreground">
+                                                        <span class="px-1.5 py-0.5 rounded"
+                                                                    @class([
+                                                                        'bg-green-100 text-green-800' => ($statusFilter ?: $group->status) === 'active',
+                                                                        'bg-yellow-100 text-yellow-800' => ($statusFilter ?: $group->status) === 'condemn',
+                                                                        'bg-red-100 text-red-800' => ($statusFilter ?: $group->status) === 'disposed',
+                                                                    ])>
+                                                                {{ ucfirst($statusFilter ?: $group->status) }}
+                                                        </span>
+                                                </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right">
                             <div class="flex justify-end gap-2">
                                 <button wire:click.stop="openGroupModal({{ $group->id }})" class="inline-flex items-center justify-center rounded-md h-8 px-3 hover:bg-accent">View Items</button>
