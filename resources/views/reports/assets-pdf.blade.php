@@ -20,9 +20,14 @@
 </head>
 <body>
   <header>
-    @php $logo = public_path('Quezon_City_Public_Library_logo.png'); @endphp
-    @if(file_exists($logo))
+    @php 
+      $logo = public_path('Quezon_City_Public_Library_logo.png');
+      $hasGd = extension_loaded('gd');
+    @endphp
+    @if($hasGd && file_exists($logo))
       <img src="{{ $logo }}" alt="QCPL Logo" />
+    @else
+      <div style="font-size:10px;color:#6b7280;">Quezon City Public Library</div>
     @endif
     <div>
       <h1>Quezon City Public Library</h1>
