@@ -3,6 +3,7 @@
 namespace App\Livewire\Assets;
 
 use App\Models\Asset;
+use App\Models\AssetGroup;
 use App\Models\Category;
 use App\Models\Branch;
 use App\Models\Division;
@@ -120,8 +121,9 @@ class AssetForm extends Component
 
     private function calculateTotalCost()
     {
-        if ($this->quantity && $this->unit_cost) {
-            $this->total_cost = $this->quantity * $this->unit_cost;
+        // Total cost is per-item cost; for multiple creation we still store per-item value
+        if ($this->unit_cost !== null && $this->unit_cost !== '') {
+            $this->total_cost = $this->unit_cost;
         }
     }
 
@@ -149,17 +151,19 @@ class AssetForm extends Component
     {
         $this->validate();
 
-        $data = [
-            'description' => $this->description,
-            'quantity' => $this->quantity,
+        // Prepare shared fields (for group) and per-item fields (for asset)
+        $groupData = [
+            'description'   => $this->description,
+            'category_id'   => $this->category_id,
             'date_acquired' => $this->date_acquired,
-            'unit_cost' => $this->unit_cost,
-            'total_cost' => $this->total_cost,
-            'category_id' => $this->category_id,
-            'status' => $this->status,
-            'source' => $this->source,
-            'current_branch_id' => $this->current_branch_id,
-            'current_division_id' => $this->current_division_id,
+            'unit_cost'     => $this->unit_cost,
+            'status'        => $this->status,
+            'source'        => $this->source,
+            'created_by'    => auth()->id(),
+        ];
+        $assetLocData = [
+            'current_branch_id'  => $this->current_branch_id,
+            'current_division_id'=> $this->current_division_id,
             'current_section_id' => $this->current_section_id,
         ];
 
@@ -168,7 +172,9 @@ class AssetForm extends Component
             if ($this->existing_image) {
                 Storage::disk('public')->delete($this->existing_image);
             }
-            $data['image_path'] = $this->image->store('assets', 'public');
+            $storedPath = $this->image->store('assets', 'public');
+            $this->existing_image = $storedPath;
+            $groupData['image_path'] = $storedPath;
         }
 
         if ($this->assetId) {
@@ -199,18 +205,73 @@ class AssetForm extends Component
                     'transferred_by' => auth()->id(),
                 ]);
             }
-            $asset->update($data);
+            // Enforce single-item model on legacy columns
+            $updateData = array_merge($assetLocData, [
+                'description' => $this->description,
+                'quantity' => 1,
+                'date_acquired' => $this->date_acquired,
+                'unit_cost' => $this->unit_cost,
+                'total_cost' => $this->unit_cost,
+                'category_id' => $this->category_id,
+                'status' => $this->status,
+                'source' => $this->source,
+            ]);
+            if (!empty($this->existing_image)) {
+                $updateData['image_path'] = $this->existing_image;
+            }
+            $asset->update($updateData);
             
             session()->flash('success', 'Asset updated successfully.');
             $this->dispatch('asset-updated');
         } else {
-            // Create new asset
-            $data['property_number'] = $this->property_number;
-            $data['created_by'] = auth()->id();
-            
-            Asset::create($data);
-            
-            session()->flash('success', 'Asset created successfully.');
+            // Create new asset(s)
+            // Find or create the AssetGroup for these shared attributes
+            $group = AssetGroup::firstOrCreate([
+                'description' => $groupData['description'],
+                'category_id' => $groupData['category_id'],
+                'date_acquired' => $groupData['date_acquired'],
+                'unit_cost' => $groupData['unit_cost'],
+                'status' => $groupData['status'],
+                'source' => $groupData['source'],
+                'created_by' => $groupData['created_by'],
+            ], [
+                'image_path' => $groupData['image_path'] ?? null,
+            ]);
+
+            // If creating multiple physical items, create one row per item with unique property numbers
+            $count = max(1, (int) $this->quantity);
+
+            // Base per-item data
+            $baseData = array_merge($assetLocData, [
+                'description' => $this->description, // legacy
+                'quantity' => 1,
+                'date_acquired' => $this->date_acquired, // legacy
+                'unit_cost' => $this->unit_cost, // legacy
+                'total_cost' => $this->unit_cost, // legacy per-item
+                'category_id' => $this->category_id, // legacy
+                'status' => $this->status, // legacy
+                'source' => $this->source, // legacy
+                'created_by' => auth()->id(),
+                'asset_group_id' => $group->id,
+            ]);
+
+            $imagePath = $this->existing_image ?? null;
+
+            $created = 0;
+            for ($i = 0; $i < $count; $i++) {
+                $assetData = $baseData;
+                $assetData['property_number'] = Asset::generatePropertyNumber();
+                if ($imagePath) {
+                    $assetData['image_path'] = $imagePath;
+                }
+                Asset::create($assetData);
+                $created++;
+            }
+
+            session()->flash('success', $created > 1
+                ? ("Created {$created} assets with unique property numbers.")
+                : 'Asset created successfully.'
+            );
             $this->dispatch('asset-created');
         }
 

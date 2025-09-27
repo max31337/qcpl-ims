@@ -81,7 +81,13 @@
                                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                     Quantity <span class="text-destructive">*</span>
                                 </label>
-                                <x-ui.input type="number" wire:model.live="quantity" min="1" class="mt-1.5" />
+                                @if(!$assetId)
+                                    <x-ui.input type="number" wire:model.live="quantity" min="1" class="mt-1.5" />
+                                    <p class="text-xs text-muted-foreground mt-1">We'll create one record per item with its own Property Number.</p>
+                                @else
+                                    <x-ui.input type="number" value="1" readonly class="mt-1.5 bg-muted" />
+                                    <p class="text-xs text-muted-foreground mt-1">Each asset record represents a single physical item.</p>
+                                @endif
                                 @error('quantity') <p class="text-sm text-destructive mt-1">{{ $message }}</p> @enderror
                             </div>
 
@@ -95,7 +101,7 @@
 
                             <div>
                                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                                    Total Cost
+                                    Total Cost (per item)
                                 </label>
                                 <x-ui.input wire:model="total_cost" readonly class="mt-1.5 bg-muted" />
                                 <p class="text-xs text-muted-foreground mt-1">Auto-calculated</p>

@@ -12,9 +12,14 @@ class Asset extends Model
     use HasFactory;
 
     protected $fillable = [
-        'property_number','description','quantity','date_acquired','unit_cost','total_cost','category_id',
-        'status','source','image_path','current_branch_id','current_division_id','current_section_id','created_by'
+        'property_number',
+        'asset_group_id',
+        // Legacy/shared columns kept during staged migration
+        'description','quantity','date_acquired','unit_cost','total_cost','category_id','status','source','image_path',
+        // Location and meta
+        'current_branch_id','current_division_id','current_section_id','created_by'
     ];
+    public function group(): BelongsTo { return $this->belongsTo(AssetGroup::class, 'asset_group_id'); }
 
     protected $casts = [
         'date_acquired' => 'date',

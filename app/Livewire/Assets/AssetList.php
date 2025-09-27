@@ -3,6 +3,7 @@
 namespace App\Livewire\Assets;
 
 use App\Models\Asset;
+use App\Models\AssetGroup;
 use App\Models\Category;
 use App\Models\Branch;
 use Livewire\Component;
@@ -36,6 +37,10 @@ class AssetList extends Component
     // Details modal properties
     public $showDetailsModal = false;
     public $selectedAsset = null; // array of asset details
+    // Group details modal
+    public $showGroupModal = false;
+    public $selectedGroup = null; // array of group details
+    public $selectedGroupItems = [];
 
     // Form properties
     public $property_number = '';
@@ -277,43 +282,86 @@ class AssetList extends Component
     {
         $this->validate();
 
-        $data = [
+        // Build shared/group data
+        $groupPayload = [
             'description' => $this->description,
-            'quantity' => $this->quantity,
+            'category_id' => $this->category_id,
             'date_acquired' => $this->date_acquired,
             'unit_cost' => $this->unit_cost,
-            'total_cost' => $this->total_cost,
-            'category_id' => $this->category_id,
             'status' => $this->status,
             'source' => $this->source,
+            'created_by' => auth()->id(),
+        ];
+        $locPayload = [
             'current_branch_id' => $this->current_branch_id,
             'current_division_id' => $this->current_division_id,
             'current_section_id' => $this->current_section_id,
         ];
 
         // Handle image upload
+        $imagePath = null;
         if ($this->image) {
-            // Delete old image if editing
             if ($this->editingAsset && $this->editingAsset->image_path) {
                 Storage::disk('public')->delete($this->editingAsset->image_path);
             }
-            $data['image_path'] = $this->image->store('assets', 'public');
+            $imagePath = $this->image->store('assets', 'public');
         }
 
         if ($this->editingAsset) {
-            // Update existing asset
-            $this->editingAsset->update($data);
+            // Update existing asset (per-item semantics)
+            $update = array_merge($locPayload, [
+                'description' => $this->description,
+                'quantity' => 1,
+                'date_acquired' => $this->date_acquired,
+                'unit_cost' => $this->unit_cost,
+                'total_cost' => $this->unit_cost,
+                'category_id' => $this->category_id,
+                'status' => $this->status,
+                'source' => $this->source,
+            ]);
+            if ($imagePath) { $update['image_path'] = $imagePath; }
+            $this->editingAsset->update($update);
             
             session()->flash('success', 'Asset updated successfully!');
             $this->dispatch('asset-updated');
         } else {
-            // Create new asset
-            $data['property_number'] = $this->property_number;
-            $data['created_by'] = auth()->id();
-            
-            Asset::create($data);
-            
-            session()->flash('success', 'Asset created successfully!');
+            // Find or create group
+            $group = AssetGroup::firstOrCreate([
+                'description' => $groupPayload['description'],
+                'category_id' => $groupPayload['category_id'],
+                'date_acquired' => $groupPayload['date_acquired'],
+                'unit_cost' => $groupPayload['unit_cost'],
+                'status' => $groupPayload['status'],
+                'source' => $groupPayload['source'],
+                'created_by' => $groupPayload['created_by'],
+            ], [
+                'image_path' => $imagePath,
+            ]);
+
+            // Create N per-item asset rows
+            $n = max(1, (int) $this->quantity);
+            for ($i = 0; $i < $n; $i++) {
+                $payload = array_merge($locPayload, [
+                    'property_number' => Asset::generatePropertyNumber(),
+                    'asset_group_id' => $group->id,
+                    // legacy columns kept during staged migration
+                    'description' => $this->description,
+                    'quantity' => 1,
+                    'date_acquired' => $this->date_acquired,
+                    'unit_cost' => $this->unit_cost,
+                    'total_cost' => $this->unit_cost,
+                    'category_id' => $this->category_id,
+                    'status' => $this->status,
+                    'source' => $this->source,
+                    'created_by' => auth()->id(),
+                ]);
+                if ($imagePath) { $payload['image_path'] = $imagePath; }
+                Asset::create($payload);
+            }
+
+            session()->flash('success', $n > 1
+                ? ("Created {$n} assets with unique property numbers under one group.")
+                : 'Asset created successfully!');
             $this->dispatch('asset-created');
         }
 
@@ -379,6 +427,7 @@ class AssetList extends Component
         $this->resetPage();
     }
 
+    // Legacy per-item listing (kept for reference, now unused by view when grouping enabled)
     public function getAssetsProperty()
     {
         $query = Asset::with(['category', 'currentBranch', 'currentDivision', 'currentSection'])
@@ -414,6 +463,103 @@ class AssetList extends Component
                     ->paginate($this->perPage);
     }
 
+    // New: Grouped listing sourced from AssetGroup with aggregated items
+    public function getGroupsProperty()
+    {
+        $user = auth()->user();
+        $q = AssetGroup::query()
+            ->with(['category'])
+            ->withCount(['assets as items_count' => function ($aq) use ($user) {
+                $aq->forUser($user);
+            }])
+            ->with(['assets' => function ($aq) use ($user) {
+                $aq->forUser($user)->select('id','asset_group_id','property_number','current_branch_id','current_division_id','current_section_id');
+            }]);
+
+        // Apply filters on group fields + whereHas on assets for branch/recent scoping
+        if ($this->search) {
+            $term = '%'.$this->search.'%';
+            $q->where(function ($w) use ($term) {
+                $w->where('description', 'like', $term);
+            })->orWhereHas('assets', function ($aq) use ($term) {
+                $aq->where('property_number', 'like', $term);
+            });
+        }
+
+        if ($this->categoryFilter) {
+            $q->where('category_id', $this->categoryFilter);
+        }
+
+        if ($this->statusFilter) {
+            $q->where('status', $this->statusFilter);
+        }
+
+        if ($this->branchFilter) {
+            $branchId = (int) $this->branchFilter;
+            $q->whereHas('assets', function ($aq) use ($branchId) {
+                $aq->where('current_branch_id', $branchId);
+            });
+        } else {
+            // Ensure scoping via assets relationship too
+            $q->whereHas('assets', function ($aq) use ($user) {
+                $aq->forUser($user);
+            });
+        }
+
+        if ($this->recentFilter) {
+            $days = (int) $this->recentFilter;
+            if ($days > 0) {
+                $q->where('created_at', '>=', now()->subDays($days));
+            }
+        }
+
+        // Order by latest group creation
+        $paginator = $q->orderByDesc('created_at')->paginate($this->perPage);
+        return $paginator;
+    }
+
+    public function openGroupModal($groupId)
+    {
+        $user = auth()->user();
+        $group = AssetGroup::with(['category'])
+            ->with(['assets' => function ($aq) use ($user) {
+                $aq->forUser($user)
+                   ->with(['currentBranch','currentDivision','currentSection'])
+                   ->orderBy('property_number');
+            }])
+            ->findOrFail($groupId);
+
+        $this->selectedGroup = [
+            'id' => $group->id,
+            'description' => $group->description,
+            'category' => $group->category?->name,
+            'status' => $group->status,
+            'date_acquired' => $group->date_acquired,
+            'unit_cost' => (float) $group->unit_cost,
+            'source' => $group->source,
+            'image_path' => $group->image_path,
+        ];
+
+        $this->selectedGroupItems = $group->assets->map(function ($a) {
+            return [
+                'id' => $a->id,
+                'property_number' => $a->property_number,
+                'branch' => $a->currentBranch?->name,
+                'division' => $a->currentDivision?->name,
+                'section' => $a->currentSection?->name,
+            ];
+        })->values()->all();
+
+        $this->showGroupModal = true;
+    }
+
+    public function closeGroupModal()
+    {
+        $this->showGroupModal = false;
+        $this->selectedGroup = null;
+        $this->selectedGroupItems = [];
+    }
+
     public function getCategoriesProperty()
     {
         return Category::where('type', 'asset')
@@ -434,7 +580,8 @@ class AssetList extends Component
     public function render()
     {
         return view('livewire.assets.asset-list', [
-            'assets' => $this->assets,
+            // For grouped UI, we pass groups. Existing blade will be updated accordingly.
+            'groups' => $this->groups,
             'categories' => $this->categories,
             'branches' => $this->branches,
         ]);

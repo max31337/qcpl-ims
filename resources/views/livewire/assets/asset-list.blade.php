@@ -106,7 +106,7 @@
         
         <div class="mt-4 flex justify-between items-center">
             <p class="text-sm text-muted-foreground">
-                Showing {{ $assets->count() }} of {{ $assets->total() }} assets
+                Showing {{ $groups->count() }} of {{ $groups->total() }} groups
             </p>
             
             @if($search || $categoryFilter || $statusFilter || $branchFilter || $recentFilter)
@@ -123,84 +123,32 @@
     </x-ui.card>
 
     <!-- Assets Grid -->
-    @if($assets->count() > 0)
+    @if($groups->count() > 0)
         @if($viewMode === 'card')
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($assets as $asset)
-                <x-ui.card class="p-6 hover:shadow-md transition-shadow cursor-pointer" wire:click="openDetailsModal({{ $asset->id }})">
+            @foreach($groups as $group)
+                <x-ui.card class="p-6 hover:shadow-md transition-shadow cursor-pointer" wire:click="openGroupModal({{ $group->id }})">
                     <div class="flex items-start justify-between mb-4">
-                        <span class="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded">
-                            {{ $asset->property_number }}
-                        </span>
-                        <x-ui.badge
-                            :variant="$asset->status === 'active' ? 'success' : ($asset->status === 'condemn' ? 'warning' : 'danger')">
-                            {{ ucfirst($asset->status) }}
-                        </x-ui.badge>
+                        <div class="flex items-center gap-2">
+                            <x-ui.badge :variant="$group->status === 'active' ? 'success' : ($group->status === 'condemn' ? 'warning' : 'danger')">
+                                {{ ucfirst($group->status) }}
+                            </x-ui.badge>
+                        </div>
+                        <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">{{ $group->items_count }} items</span>
                     </div>
 
-                    @if($asset->image_path)
+                    @if($group->image_path)
                         <div class="mb-4 relative w-full h-32 overflow-hidden rounded-md border bg-muted">
-                            <img src="{{ Storage::url($asset->image_path) }}" 
-                                 alt="{{ $asset->description }}"
+                            <img src="{{ Storage::url($group->image_path) }}" 
+                                 alt="{{ $group->description }}"
                                  class="absolute inset-0 h-full w-full object-cover" />
                         </div>
                     @endif
 
                     <div class="space-y-2">
-                        <h3 class="font-semibold text-lg leading-tight">{{ $asset->description }}</h3>
-                        <p class="text-sm text-muted-foreground">{{ $asset->category->name }}</p>
-                        <p class="text-xs text-muted-foreground">
-                            <svg class="inline w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
-                                <circle cx="12" cy="10" r="3"/>
-                            </svg>
-                            {{ $asset->currentBranch->name }} • {{ $asset->currentDivision->name }} • {{ $asset->currentSection->name }}
-                        </p>
-                        <p class="text-xs text-muted-foreground">
-                            <svg class="inline w-3 h-3 mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="9" cy="9" r="7"/>
-                                <path d="M9 9h.01"/>
-                                <path d="M15 15h.01"/>
-                            </svg>
-                            Qty: {{ $asset->quantity }}
-                        </p>
-                    </div>
-
-                    <div class="mt-4 pt-4 border-t flex items-center justify-between">
-                        <div>
-                            <span class="text-lg font-bold">₱{{ number_format($asset->total_cost, 2) }}</span>
-                            @if($asset->quantity > 1)
-                                <span class="text-xs text-muted-foreground block">
-                                    ₱{{ number_format($asset->unit_cost, 2) }} each
-                                </span>
-                            @endif
-                        </div>
-                        
-                        <div class="flex gap-2">
-                            <button wire:click.stop="history({{ $asset->id }})" 
-                                    class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-8 w-8">
-                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                    <path d="M3 3v5h5"/>
-                                    <path d="M12 7v5l4 2"/>
-                                </svg>
-                            </button>
-                            
-                            <x-ui.button wire:click.stop="openEditModal({{ $asset->id }})" variant="ghost" size="sm">
-                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5"/>
-                                    <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
-                                    <path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1.05-3.95 5.37-5.44Z"/>
-                                </svg>
-                            </x-ui.button>
-                            
-                            <x-ui.button wire:click.stop="transfer({{ $asset->id }})" size="sm">
-                                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-                                </svg>
-                                Transfer
-                            </x-ui.button>
-                        </div>
+                        <h3 class="font-semibold text-lg leading-tight">{{ $group->description }}</h3>
+                        <p class="text-sm text-muted-foreground">{{ $group->category->name ?? '—' }}</p>
+                        <p class="text-xs text-muted-foreground">Acquired: {{ \Carbon\Carbon::parse($group->date_acquired)->format('M d, Y') }}</p>
                     </div>
                 </x-ui.card>
             @endforeach
@@ -210,70 +158,45 @@
             <table class="w-full table-fixed divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Property #</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Asset Group</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">Category</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Qty</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Cost</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Items</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($assets as $asset)
-                    <tr class="hover:bg-gray-50 cursor-pointer" wire:click="openDetailsModal({{ $asset->id }})">
-                        <td class="px-4 py-3">
-                            <span class="text-xs font-mono text-muted-foreground bg-muted px-2 py-1 rounded">{{ $asset->property_number }}</span>
-                        </td>
+                    @foreach($groups as $group)
+                    <tr class="hover:bg-gray-50 cursor-pointer" wire:click="openGroupModal({{ $group->id }})">
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
-                                @if($asset->image_path)
+                                @if($group->image_path)
                                     <div class="h-10 w-10 rounded-md overflow-hidden bg-muted border relative">
-                                        <img src="{{ Storage::url($asset->image_path) }}" alt="{{ $asset->description }}" class="absolute inset-0 h-full w-full object-cover">
+                                        <img src="{{ Storage::url($group->image_path) }}" alt="{{ $group->description }}" class="absolute inset-0 h-full w-full object-cover">
                                     </div>
                                 @else
                                     <div class="h-10 w-10 rounded-md bg-muted border"></div>
                                 @endif
                                 <div>
-                                    <div class="font-medium truncate max-w-[28ch]">{{ $asset->description }}</div>
-                                    <div class="text-xs text-muted-foreground">Status:
-                                        <span class="px-1.5 py-0.5 rounded"
-                                              @class([
-                                                'bg-green-100 text-green-800' => $asset->status === 'active',
-                                                'bg-yellow-100 text-yellow-800' => $asset->status === 'condemn',
-                                                'bg-red-100 text-red-800' => $asset->status === 'disposed',
-                                              ])>
-                                            {{ ucfirst($asset->status) }}
-                                        </span>
-                                    </div>
+                                    <div class="font-medium truncate max-w-[42ch]">{{ $group->description }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $asset->category->name }}</td>
-                        <td class="px-4 py-3 text-xs text-muted-foreground truncate max-w-[40ch]">{{ $asset->currentBranch->name }} • {{ $asset->currentDivision->name }} • {{ $asset->currentSection->name }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $asset->quantity }}</td>
-                        <td class="px-4 py-3 text-sm">₱{{ number_format($asset->total_cost, 2) }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $group->category->name ?? '—' }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $group->items_count }}</td>
+                        <td class="px-4 py-3 text-xs text-muted-foreground">
+                            <span class="px-1.5 py-0.5 rounded"
+                                  @class([
+                                    'bg-green-100 text-green-800' => $group->status === 'active',
+                                    'bg-yellow-100 text-yellow-800' => $group->status === 'condemn',
+                                    'bg-red-100 text-red-800' => $group->status === 'disposed',
+                                  ])>
+                                {{ ucfirst($group->status) }}
+                            </span>
+                        </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right">
                             <div class="flex justify-end gap-2">
-                                <button wire:click.stop="history({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
-                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                                        <path d="M3 3v5h5"/>
-                                        <path d="M12 7v5l4 2"/>
-                                    </svg>
-                                </button>
-                                <button wire:click.stop="openEditModal({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
-                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5"/>
-                                        <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
-                                        <path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1.05-3.95 5.37-5.44Z"/>
-                                    </svg>
-                                </button>
-                                <button wire:click.stop="transfer({{ $asset->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
-                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
-                                    </svg>
-                                </button>
+                                <button wire:click.stop="openGroupModal({{ $group->id }})" class="inline-flex items-center justify-center rounded-md h-8 px-3 hover:bg-accent">View Items</button>
                             </div>
                         </td>
                     </tr>
@@ -285,7 +208,7 @@
 
         <!-- Pagination -->
         <div class="mt-6">
-            {{ $assets->links() }}
+            {{ $groups->links() }}
         </div>
     @else
         <x-ui.card class="p-12 text-center">
@@ -313,6 +236,96 @@
         </x-ui.card>
     @endif
 
+        <!-- Group Details Modal (lists per-item property numbers) -->
+        <div x-data="{ show: @entangle('showGroupModal') }"
+             x-show="show"
+             x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <!-- Background overlay -->
+                <div x-show="show"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0"
+                     x-transition:enter-end="opacity-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100"
+                     x-transition:leave-end="opacity-0"
+                     class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                     @click="$wire.closeGroupModal()"></div>
+
+                <!-- Modal panel -->
+                <div x-show="show"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                     x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                     class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
+
+                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900" x-text="$wire.selectedGroup?.description">Asset Group</h3>
+                            <p class="text-sm text-muted-foreground" x-text="$wire.selectedGroup?.category"></p>
+                        </div>
+                        <button @click="$wire.closeGroupModal()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="px-6 py-6 space-y-4">
+                        <div class="text-sm text-muted-foreground">Items in this group</div>
+
+                        <div class="rounded-md border overflow-hidden">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Property #</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="item in $wire.selectedGroupItems" :key="item.id">
+                                        <tr>
+                                            <td class="px-4 py-2 font-mono text-xs" x-text="item.property_number"></td>
+                                            <td class="px-4 py-2 text-xs text-muted-foreground" x-text="`${item.branch ?? '—'} • ${item.division ?? '—'} • ${item.section ?? '—'}`"></td>
+                                            <td class="px-4 py-2 text-right">
+                                                <div class="inline-flex gap-2">
+                                                    <button @click="$wire.history(item.id)" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
+                                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                                                            <path d="M3 3v5h5"/>
+                                                            <path d="M12 7v5l4 2"/>
+                                                        </svg>
+                                                    </button>
+                                                    <button @click="$wire.openEditModal(item.id)" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
+                                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M4 13.5V4a2 2 0 0 1 2-2h8.5L20 7.5V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6.5"/>
+                                                            <path d="M14 2v4a2 2 0 0 0 2 2h4"/>
+                                                            <path d="M10.42 12.61a2.1 2.1 0 1 1 2.97 2.97L7.95 21 4 22l1.05-3.95 5.37-5.44Z"/>
+                                                        </svg>
+                                                    </button>
+                                                    <button @click="$wire.transfer(item.id)" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">
+                                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Details Modal (legacy, still available if needed) -->
         <!-- Asset Details Modal -->
         <div x-data="{ show: @entangle('showDetailsModal') }"
              x-show="show"

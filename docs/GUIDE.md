@@ -122,16 +122,9 @@ Schema::create('categories', function (Blueprint $table) {
 ```php
 Schema::create('assets', function (Blueprint $table) {
     $table->id();
-    $table->string('property_number')->unique(); // e.g., 2009-9055
-    $table->text('description');
-    $table->integer('quantity');
-    $table->date('date_acquired');
-    $table->decimal('unit_cost', 12, 2);
-    $table->decimal('total_cost', 12, 2);
-    $table->foreignId('category_id')->constrained();
-    $table->enum('status', ['active', 'condemn', 'disposed']);
-    $table->enum('source', ['qc_property', 'donation']);
-    $table->string('image_path')->nullable();
+  $table->string('property_number')->unique(); // e.g., 2025-0004
+  // One physical item per row; shared attributes now live on asset_groups
+  $table->foreignId('asset_group_id')->nullable()->constrained('asset_groups');
     
     // Current Location
     $table->foreignId('current_branch_id')->constrained('branches');
@@ -140,6 +133,23 @@ Schema::create('assets', function (Blueprint $table) {
     
     $table->foreignId('created_by')->constrained('users');
     $table->timestamps();
+});
+```
+
+#### asset_groups (Shared asset attributes)
+Holds fields common to identical items so they can be grouped visually while keeping per-item rows and histories.
+```php
+Schema::create('asset_groups', function (Blueprint $table) {
+  $table->id();
+  $table->string('description');
+  $table->foreignId('category_id')->constrained();
+  $table->date('date_acquired');
+  $table->decimal('unit_cost', 12, 2);
+  $table->enum('status', ['active','condemn','disposed']);
+  $table->enum('source', ['qc_property','donation']);
+  $table->string('image_path')->nullable();
+  $table->foreignId('created_by')->constrained('users');
+  $table->timestamps();
 });
 ```
 
@@ -235,17 +245,14 @@ class User extends Authenticatable
 ```php
 class Asset extends Model
 {
-    protected $fillable = [
-        'property_number', 'description', 'quantity', 'date_acquired',
-        'unit_cost', 'total_cost', 'category_id', 'status', 'source',
-        'image_path', 'current_branch_id', 'current_division_id', 
-        'current_section_id', 'created_by'
-    ];
+  // Each row = one physical item with a unique property_number
+  protected $fillable = [
+    'property_number', 'asset_group_id',
+    'current_branch_id','current_division_id','current_section_id','created_by'
+  ];
 
     protected $casts = [
-        'date_acquired' => 'date',
-        'unit_cost' => 'decimal:2',
-        'total_cost' => 'decimal:2'
+    // legacy casts retained where needed during staged migration
     ];
 
     public function category() { return $this->belongsTo(Category::class); }
@@ -271,7 +278,46 @@ class Asset extends Model
         
         return $year . '-' . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
     }
+    public function group(): BelongsTo { return $this->belongsTo(AssetGroup::class, 'asset_group_id'); }
 }
+
+### AssetGroup Model
+```php
+class AssetGroup extends Model
+{
+    protected $fillable = [
+        'description','category_id','date_acquired','unit_cost','status','source','image_path','created_by'
+    ];
+    public function assets(): HasMany { return $this->hasMany(Asset::class); }
+    public function category(): BelongsTo { return $this->belongsTo(Category::class); }
+}
+```
+
+## One property number per item, grouped UI
+
+- Creation/update: Every physical item gets a unique year-based property number (e.g., 2025-0004). When creating N identical items, the form creates N Asset rows under one AssetGroup.
+- Listing: Asset Management shows groups (one card/row per `asset_group`) with a count badge (e.g., “10 items”). Clicking a group opens a modal listing all items/property numbers, like:
+  - 2025-0004 Penguin Classics: Noli Me Tangere (Touch Me Not) by Jose Rizal
+  - 2025-0005 Penguin Classics: Noli Me Tangere (Touch Me Not) by Jose Rizal
+  - 2025-0006 Penguin Classics: Noli Me Tangere (Touch Me Not) by Jose Rizal
+- Histories: Transfers are recorded per item; each asset maintains its own `AssetTransferHistory` timeline.
+- Scoping: Always apply `Asset::scopeForUser(User)` to the items relation when querying groups to preserve branch isolation.
+
+### Grouped queries (example)
+```php
+$groups = AssetGroup::with('category')
+  ->withCount(['assets as items_count' => fn($q) => $q->forUser($user)])
+  ->whereHas('assets', fn($q) => $q->forUser($user))
+  ->orderByDesc('created_at')
+  ->paginate(12);
+```
+
+### Creation flow (simplified)
+1) Find or create an `AssetGroup` from shared fields (description, category, date_acquired, unit_cost, status, source, image).
+2) Create N `Asset` rows with `asset_group_id` set, each with a generated unique `property_number` and its own location.
+
+### Migration strategy
+- Staged: Add `asset_groups` and `assets.asset_group_id`; backfill links from existing assets; do not drop legacy columns until all UIs/reports are updated. This repo uses a backfill-safe migration for that.
 ```
 
 ## Livewire Components Structure
