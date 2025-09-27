@@ -156,14 +156,15 @@
         </thead>
         <tbody>
           @php
-            $maxV = max(($topSupplyCategories?->pluck('v')->all() ?? [1]));
+            $vals = $topSupplyCategories?->pluck('v')->filter(fn($x) => $x > 0)->all() ?? [];
+            $maxV = max($vals ?: [1]);
           @endphp
           @forelse($topSupplyCategories as $cat)
             <tr class="border-t">
               <td class="px-3 py-2 text-sm">{{ $cat->name }}</td>
               <td class="px-3 py-2 text-sm">
                 <div class="h-2 w-full bg-muted rounded">
-                  <div class="h-2 bg-primary rounded" style="width: {{ ($cat->v ?? 0) / $maxV * 100 }}%"></div>
+                  <div class="h-2 bg-primary rounded" style="width: {{ $maxV > 0 ? (($cat->v ?? 0) / $maxV * 100) : 0 }}%"></div>
                 </div>
               </td>
               <td class="px-3 py-2 text-sm text-right">₱{{ number_format($cat->v ?? 0, 2) }}</td>

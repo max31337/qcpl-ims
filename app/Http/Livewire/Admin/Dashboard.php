@@ -98,11 +98,12 @@ class Dashboard extends Component
                 ->whereColumn('current_stock', '>=', 'min_stock')
                 ->count();
 
-                // Top supply categories by value
+                // Top supply categories by value (name + v, matching blade)
                 $topSupplyCategories = (clone $suppliesQuery)
-                    ->selectRaw('category_id, SUM(current_stock*unit_cost) as value')
-                    ->groupBy('category_id')
-                    ->orderByDesc('value')
+                    ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
+                    ->selectRaw('COALESCE(categories.name, \"Uncategorized\") as name, SUM(current_stock*unit_cost) as v')
+                    ->groupBy('name')
+                    ->orderByDesc('v')
                     ->limit(5)
                     ->get();
 
