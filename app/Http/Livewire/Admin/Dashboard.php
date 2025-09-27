@@ -101,8 +101,9 @@ class Dashboard extends Component
                 // Top supply categories by value (name + v, matching blade)
                 $topSupplyCategories = (clone $suppliesQuery)
                     ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
-                    ->selectRaw('COALESCE(categories.name, \"Uncategorized\") as name, SUM(current_stock*unit_cost) as v')
-                    ->groupBy('name')
+                    ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, SUM(current_stock*unit_cost) as v")
+                    // Group by the underlying column for compatibility across drivers
+                    ->groupBy('categories.name')
                     ->orderByDesc('v')
                     ->limit(5)
                     ->get();
