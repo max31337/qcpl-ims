@@ -7,13 +7,15 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Supply;
 use App\Models\Category;
 use App\Models\User;
+use App\Models\Branch;
 
 class SupplyDemoSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminId = User::where('role','admin')->value('id') ?? 1;
-        $branchId = User::where('role','admin')->value('branch_id') ?? 1;
+    $adminId = User::where('role','admin')->value('id') ?? 1;
+    $mainBranchId = Branch::where('is_main', true)->value('id');
+    $otherBranchIds = Branch::where('is_main', false)->pluck('id')->all();
 
         $catalog = [
             // Printing & Paper
@@ -43,19 +45,44 @@ class SupplyDemoSeeder extends Seeder
             $categoryId = Category::where(['name' => $item['cat'], 'type' => 'supply'])->value('id');
             if (!$categoryId) { continue; }
 
+            // Distribute stocks: some out, some low, some ok
+            $bucketRoll = random_int(1, 100);
+            if ($bucketRoll <= 15) {
+                $currentStock = 0; // out of stock
+            } elseif ($bucketRoll <= 45) {
+                // low stock: between 1 and min-1
+                $currentStock = max(1, $item['min'] - random_int(1, max(1, (int) floor($item['min'] / 2))));
+            } else {
+                // ok stock: min to min+25
+                $currentStock = random_int($item['min'], $item['min'] + 25);
+            }
+
+            // Dates: created/updated in past months/years
+            $years = random_int(0, 3);
+            $months = random_int(0, 11);
+            $days = random_int(0, 27);
+            $createdAt = now()->subYears($years)->subMonths($months)->subDays($days);
+            $updatedAt = (clone $createdAt)->addDays(random_int(0, 120));
+            if ($updatedAt->greaterThan(now())) { $updatedAt = now()->subDays(random_int(0, 5)); }
+
+            // Branch: 70% main, 30% others
+            $branchId = (!empty($otherBranchIds) && random_int(1,100) > 70)
+                ? $otherBranchIds[array_rand($otherBranchIds)]
+                : ($mainBranchId ?? User::where('role','admin')->value('branch_id') ?? 1);
+
             $payload = [
                 'supply_number' => Supply::generateSupplyNumber(),
                 'description' => $item['desc'],
                 'category_id' => $categoryId,
-                'current_stock' => random_int($item['min'], $item['min'] + 25),
+                'current_stock' => $currentStock,
                 'min_stock' => $item['min'],
                 'unit_cost' => $item['unit_cost'],
                 'status' => 'active',
                 'branch_id' => $branchId,
                 'created_by' => $adminId,
-                'last_updated' => now(),
-                'created_at' => now(),
-                'updated_at' => now(),
+                'last_updated' => $updatedAt,
+                'created_at' => $createdAt,
+                'updated_at' => $updatedAt,
             ];
 
             Supply::firstOrCreate(
