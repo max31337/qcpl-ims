@@ -18,7 +18,6 @@
             <div class="inline-flex rounded-md border">
                 <button type="button" wire:click="setViewMode('card')"
                         class="px-3 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-ring"
-                        :class="{ 'bg-accent text-accent-foreground': $wire.viewMode === 'card' }">
                     Cards
                 </button>
                 <button type="button" wire:click="setViewMode('list')"
@@ -126,21 +125,31 @@
     @if($groups->count() > 0)
         @if($viewMode === 'card')
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            @foreach($groups as $group)
-                <x-ui.card class="p-6 hover:shadow-md transition-shadow cursor-pointer" wire:click="openGroupModal({{ $group->id }})">
+                        @foreach($groups as $group)
+                                                @php
+                                                    $singleId = $group->assets->first()->id ?? null;
+                                                    $isSingle = ($group->assets->count() === 1) && $singleId;
+                                                    $singleStatus = $isSingle ? ($group->assets->first()->status ?? $group->status) : null;
+                                                @endphp
+                                <x-ui.card
+                                    class="p-6 hover:shadow-md transition-shadow cursor-pointer"
+                                    wire:click="{{ $isSingle ? 'openDetailsModal('.($singleId ?? 'null').')' : 'openGroupModal('.$group->id.')' }}"
+                                >
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center gap-2">
-                            <x-ui.badge :variant="($statusFilter ?: $group->status) === 'active' ? 'success' : (($statusFilter ?: $group->status) === 'condemn' ? 'warning' : 'danger')">
-                                {{ ucfirst($statusFilter ?: $group->status) }}
+                                                        <x-ui.badge :variant="($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'active' ? 'success' : (($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'condemn' ? 'warning' : 'danger')">
+                                                                {{ ucfirst($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) }}
                             </x-ui.badge>
                         </div>
                                                 <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">
-                                                    {{ $group->items_count }} items
+                                                    {{ $group->items_count }} {{ $group->items_count === 1 ? 'item' : 'items' }}
+                                                    @if(!$isSingle)
                                                     <span class="ml-2 text-[11px] text-muted-foreground">
                                                         <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
                                                         <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
                                                         <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
                                                     </span>
+                                                    @endif
                                                 </span>
                     </div>
 
@@ -174,7 +183,15 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     @foreach($groups as $group)
-                    <tr class="hover:bg-gray-50 cursor-pointer" wire:click="openGroupModal({{ $group->id }})">
+                                                            @php
+                                                                $singleId = $group->assets->first()->id ?? null;
+                                                                $isSingle = ($group->assets->count() === 1) && $singleId;
+                                                                $singleStatus = $isSingle ? ($group->assets->first()->status ?? $group->status) : null;
+                                                            @endphp
+                                        <tr
+                                            class="hover:bg-gray-50 cursor-pointer"
+                                            wire:click="{{ $isSingle ? 'openDetailsModal('.($singleId ?? 'null').')' : 'openGroupModal('.$group->id.')' }}"
+                                        >
                         <td class="px-4 py-3">
                             <div class="flex items-center gap-3">
                                 @if($group->image_path)
@@ -190,28 +207,34 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $group->category->name ?? '—' }}</td>
-                                                <td class="px-4 py-3 text-sm">
-                                                    {{ $group->items_count }}
-                                                    <span class="ml-2 text-xs text-muted-foreground">
-                                                        <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
-                                                        <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
-                                                        <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
-                                                    </span>
-                                                </td>
+                                                                        <td class="px-4 py-3 text-sm">
+                                                                            {{ $group->items_count }}
+                                                                            @if(!$isSingle)
+                                                                                <span class="ml-2 text-xs text-muted-foreground">
+                                                                                    <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
+                                                                                    <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
+                                                                                    <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
+                                                                                </span>
+                                                                            @endif
+                                                                        </td>
                                                 <td class="px-4 py-3 text-xs text-muted-foreground">
                                                         <span class="px-1.5 py-0.5 rounded"
                                                                     @class([
-                                                                        'bg-green-100 text-green-800' => ($statusFilter ?: $group->status) === 'active',
-                                                                        'bg-yellow-100 text-yellow-800' => ($statusFilter ?: $group->status) === 'condemn',
-                                                                        'bg-red-100 text-red-800' => ($statusFilter ?: $group->status) === 'disposed',
+                                                                        'bg-green-100 text-green-800' => ($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'active',
+                                                                        'bg-yellow-100 text-yellow-800' => ($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'condemn',
+                                                                        'bg-red-100 text-red-800' => ($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'disposed',
                                                                     ])>
-                                                                {{ ucfirst($statusFilter ?: $group->status) }}
+                                                                {{ ucfirst($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) }}
                                                         </span>
                                                 </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right">
-                            <div class="flex justify-end gap-2">
-                                <button wire:click.stop="openGroupModal({{ $group->id }})" class="inline-flex items-center justify-center rounded-md h-8 px-3 hover:bg-accent">View Items</button>
-                            </div>
+                                                        <div class="flex justify-end gap-2">
+                                                                @if($isSingle)
+                                                                    <button wire:click.stop="openDetailsModal({{ $singleId }})" class="inline-flex items-center justify-center rounded-md h-8 px-3 hover:bg-accent">View Details</button>
+                                                                @else
+                                                                    <button wire:click.stop="openGroupModal({{ $group->id }})" class="inline-flex items-center justify-center rounded-md h-8 px-3 hover:bg-accent">View Items</button>
+                                                                @endif
+                                                        </div>
                         </td>
                     </tr>
                     @endforeach
