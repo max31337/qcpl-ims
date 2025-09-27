@@ -321,6 +321,7 @@
                                     <tr>
                                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-36">Property #</th>
                                         <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-28">Status</th>
                                         <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Actions</th>
                                     </tr>
                                 </thead>
@@ -329,6 +330,15 @@
                                         <tr class="hover:bg-accent/50 cursor-pointer" @click="$wire.openDetailsModal(item.id)">
                                             <td class="px-4 py-2 font-mono text-xs" x-text="item.property_number"></td>
                                             <td class="px-4 py-2 text-xs text-muted-foreground" x-text="`${item.branch ?? '—'} • ${item.division ?? '—'} • ${item.section ?? '—'}`"></td>
+                                            <td class="px-4 py-2 text-xs">
+                                                <span class="px-1.5 py-0.5 rounded"
+                                                      :class="{
+                                                        'bg-green-100 text-green-800': item.status === 'active',
+                                                        'bg-yellow-100 text-yellow-800': item.status === 'condemn',
+                                                        'bg-red-100 text-red-800': item.status === 'disposed'
+                                                      }"
+                                                      x-text="item.status ? (item.status.charAt(0).toUpperCase() + item.status.slice(1)) : '—'"></span>
+                                            </td>
                                             <td class="px-4 py-2 text-right">
                                                 <div class="inline-flex gap-2">
                                                     <button @click="$wire.history(item.id)" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent">

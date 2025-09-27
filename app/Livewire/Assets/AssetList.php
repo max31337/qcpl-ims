@@ -582,6 +582,7 @@ class AssetList extends Component
             return [
                 'id' => $a->id,
                 'property_number' => $a->property_number,
+                'status' => $a->status,
                 'branch' => $a->currentBranch?->name,
                 'division' => $a->currentDivision?->name,
                 'section' => $a->currentSection?->name,
