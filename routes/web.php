@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Livewire\Admin\UserManagement;
 // Admin Dashboard (Livewire)
 use App\Livewire\Admin\Dashboard as AdminDashboard;
+use App\Livewire\Admin\Analytics as AdminAnalytics;
 
 Route::view('/', 'welcome')->name('welcome');
 
@@ -11,6 +12,11 @@ Route::view('/', 'welcome')->name('welcome');
 Route::get('/dashboard', AdminDashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+// Admin Analytics
+Route::get('/admin/analytics', AdminAnalytics::class)
+    ->middleware(['auth', 'verified'])
+    ->name('admin.analytics');
 
 // Admin - User Management (Livewire component)
 Route::get('/admin/invitations', UserManagement::class)

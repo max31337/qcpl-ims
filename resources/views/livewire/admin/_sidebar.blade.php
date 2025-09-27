@@ -19,6 +19,13 @@
             Dashboard
         </a>
         
+        <a href="{{ route('admin.analytics') }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+           wire:navigate>
+            <x-ui.icon name="line-chart" />
+            Analytics
+        </a>
+        
         <a href="{{ route('assets.index') }}"
            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.*') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
            wire:navigate>
@@ -34,7 +41,7 @@
         </a>
         
         <a href="{{ route('admin.invitations') }}"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.*') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.invitations') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
            wire:navigate>
             <x-ui.icon name="users" />
             User Management

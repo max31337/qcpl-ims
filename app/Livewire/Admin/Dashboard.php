@@ -32,7 +32,8 @@ class Dashboard extends Component
         $user = Auth::user();
         // Cache key includes filters
         // Bump cache key version when payload structure changes
-        $key = sprintf('admin_dash_v2:%s:%s:%s', $this->from, $this->to, $this->branchId ?? 'all');
+    // v3: adds suppliesMonthlyValues series for bar chart
+    $key = sprintf('admin_dash_v3:%s:%s:%s', $this->from, $this->to, $this->branchId ?? 'all');
         $data = Cache::remember($key, 600, function () use ($user) {
             $assetsQuery = Asset::query();
             $suppliesQuery = Supply::query();
@@ -101,6 +102,24 @@ class Dashboard extends Component
                 $monthlyLineValues[] = (int) ($rawMonthly[$key]->c ?? 0);
             }
 
+            // Monthly supplies created (last 12 months) for bar chart
+            $rawMonthlySupplies = (clone $suppliesQuery)
+                ->selectRaw("$monthExpr as m, COUNT(*) c")
+                ->whereBetween('created_at', [
+                    $lineStart->toDateString() . ' 00:00:00',
+                    $lineEnd->toDateString() . ' 23:59:59',
+                ])
+                ->groupBy('m')
+                ->get()
+                ->keyBy('m');
+
+            $suppliesMonthlyValues = [];
+            for ($i = 0; $i < 12; $i++) {
+                $m = (clone $lineStart)->addMonths($i);
+                $key = $m->format('Y-m');
+                $suppliesMonthlyValues[] = (int) ($rawMonthlySupplies[$key]->c ?? 0);
+            }
+
             // Assets by status (for donut chart)
             $assetsByStatus = (clone $assetsQuery)
                 ->selectRaw('status, COUNT(*) c')
@@ -165,7 +184,7 @@ class Dashboard extends Component
                 ->limit(5)
                 ->get();
 
-            // Recent Activity
+            // Recent Activity (overview)
             $recentActivity = ActivityLog::orderByDesc('created_at')
                 ->limit(10)
                 ->get(['id','user_id','action','model','model_id','description','created_at']);
@@ -187,7 +206,8 @@ class Dashboard extends Component
                 'stockOk',
                 'topSupplyCategories',
                 'topRoutes',
-                'recentActivity'
+                'recentActivity',
+                'suppliesMonthlyValues'
             );
         });
 
