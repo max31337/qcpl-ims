@@ -469,16 +469,34 @@ class AssetList extends Component
         $user = auth()->user();
         $q = AssetGroup::query()
             ->with(['category'])
-            // items_count should reflect filters (branch/status) so the count matches user expectation
+            // Total items count in scope (by branch + user) regardless of status
             ->withCount(['assets as items_count' => function ($aq) use ($user) {
                 $aq->forUser($user);
-                if ($this->statusFilter) {
-                    $aq->where('status', $this->statusFilter);
-                }
                 if ($this->branchFilter) {
                     $aq->where('current_branch_id', (int) $this->branchFilter);
                 }
             }])
+            // Per-status counts to display breakdown
+            ->withCount([
+                'assets as active_count' => function ($aq) use ($user) {
+                    $aq->forUser($user)->where('status', 'active');
+                    if ($this->branchFilter) {
+                        $aq->where('current_branch_id', (int) $this->branchFilter);
+                    }
+                },
+                'assets as condemn_count' => function ($aq) use ($user) {
+                    $aq->forUser($user)->where('status', 'condemn');
+                    if ($this->branchFilter) {
+                        $aq->where('current_branch_id', (int) $this->branchFilter);
+                    }
+                },
+                'assets as disposed_count' => function ($aq) use ($user) {
+                    $aq->forUser($user)->where('status', 'disposed');
+                    if ($this->branchFilter) {
+                        $aq->where('current_branch_id', (int) $this->branchFilter);
+                    }
+                },
+            ])
             ->with(['assets' => function ($aq) use ($user) {
                 $aq->forUser($user)
                    ->select('id','asset_group_id','property_number','current_branch_id','current_division_id','current_section_id','status');

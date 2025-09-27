@@ -134,7 +134,14 @@
                                 {{ ucfirst($statusFilter ?: $group->status) }}
                             </x-ui.badge>
                         </div>
-                        <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">{{ $group->items_count }} items</span>
+                                                <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">
+                                                    {{ $group->items_count }} items
+                                                    <span class="ml-2 text-[11px] text-muted-foreground">
+                                                        <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
+                                                        <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
+                                                        <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
+                                                    </span>
+                                                </span>
                     </div>
 
                     @if($group->image_path)
@@ -183,7 +190,14 @@
                             </div>
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $group->category->name ?? '—' }}</td>
-                        <td class="px-4 py-3 text-sm">{{ $group->items_count }}</td>
+                                                <td class="px-4 py-3 text-sm">
+                                                    {{ $group->items_count }}
+                                                    <span class="ml-2 text-xs text-muted-foreground">
+                                                        <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
+                                                        <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
+                                                        <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
+                                                    </span>
+                                                </td>
                                                 <td class="px-4 py-3 text-xs text-muted-foreground">
                                                         <span class="px-1.5 py-0.5 rounded"
                                                                     @class([
@@ -289,7 +303,7 @@
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
                                     <template x-for="item in $wire.selectedGroupItems" :key="item.id">
-                                        <tr>
+                                        <tr class="hover:bg-accent/50 cursor-pointer" @click="$wire.openDetailsModal(item.id)">
                                             <td class="px-4 py-2 font-mono text-xs" x-text="item.property_number"></td>
                                             <td class="px-4 py-2 text-xs text-muted-foreground" x-text="`${item.branch ?? '—'} • ${item.division ?? '—'} • ${item.section ?? '—'}`"></td>
                                             <td class="px-4 py-2 text-right">
