@@ -1,6 +1,8 @@
 <?php
 
 use App\Livewire\Forms\LoginForm;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Session;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
@@ -22,6 +24,19 @@ new #[Layout('layouts.guest')] class extends Component
 
         $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
     }
+
+    // Expose throttle info to the view so Alpine can initialize a countdown.
+    public function throttleRemaining(): int
+    {
+        $key = Str::transliterate(Str::lower($this->form->email).'|'.request()->ip());
+        return RateLimiter::availableIn($key);
+    }
+
+    public function isThrottled(): bool
+    {
+        $key = Str::transliterate(Str::lower($this->form->email).'|'.request()->ip());
+        return RateLimiter::tooManyAttempts($key, 5);
+    }
 }; ?>
 
 <div>
@@ -41,7 +56,20 @@ new #[Layout('layouts.guest')] class extends Component
             </x-ui.alert>
         @endif
 
-        <form wire:submit="login" class="space-y-5">
+                <form wire:submit="login" class="space-y-5"
+                            x-data="{
+                                remaining: {{ (int) $this->throttleRemaining() }},
+                                interval: null,
+                                start() {
+                                    if (this.remaining > 0) {
+                                        this.interval = setInterval(() => {
+                                            if (this.remaining > 0) this.remaining--;
+                                            if (this.remaining <= 0 && this.interval) { clearInterval(this.interval); this.interval = null; }
+                                        }, 1000);
+                                    }
+                                }
+                            }"
+                            x-init="start()">
             <!-- Email or Username -->
             <div>
                 <x-ui.label for="email" required>Email or Username</x-ui.label>
@@ -70,11 +98,18 @@ new #[Layout('layouts.guest')] class extends Component
                 @endif
             </div>
 
-            <div>
-                <x-ui.button type="submit" class="w-full">
+            <div class="space-y-2">
+                <x-ui.button type="submit" class="w-full" x-bind:disabled="remaining > 0">
                     <x-ui.icon name="check" class="w-4 h-4 mr-2" />
-                    {{ __('Sign in') }}
+                    <span x-show="remaining <= 0">{{ __('Sign in') }}</span>
+                    <span x-show="remaining > 0">{{ __('Try again in') }} <span x-text="remaining"></span>s</span>
                 </x-ui.button>
+
+                <template x-if="remaining > 0">
+                    <p class="text-xs text-muted-foreground text-center">
+                        Too many attempts. Please wait <span x-text="remaining"></span> seconds before trying again.
+                    </p>
+                </template>
             </div>
 
             <div class="text-center">

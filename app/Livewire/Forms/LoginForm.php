@@ -77,4 +77,17 @@ class LoginForm extends Form
     {
         return Str::transliterate(Str::lower($this->email).'|'.request()->ip());
     }
+
+    /**
+     * Public helpers for UI to show live countdown.
+     */
+    public function isThrottled(): bool
+    {
+        return RateLimiter::tooManyAttempts($this->throttleKey(), 5);
+    }
+
+    public function throttleRemaining(): int
+    {
+        return RateLimiter::availableIn($this->throttleKey());
+    }
 }
