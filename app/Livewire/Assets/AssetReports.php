@@ -5,12 +5,10 @@ namespace App\Livewire\Assets;
 use App\Models\Asset;
 use App\Models\Category;
 use App\Models\Branch;
+use App\Models\Division;
+use App\Models\Section;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Response;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 #[Layout('layouts.app')]
@@ -19,6 +17,8 @@ class AssetReports extends Component
     public $categoryFilter = '';
     public $statusFilter = '';
     public $branchFilter = '';
+    public $divisionFilter = '';
+    public $sectionFilter = '';
     public $dateFrom = '';
     public $dateTo = '';
 
@@ -85,6 +85,29 @@ class AssetReports extends Component
         ]);
     }
 
+    public function updatedBranchFilter()
+    {
+        $this->divisionFilter = '';
+        $this->sectionFilter = '';
+    }
+
+    public function updatedDivisionFilter()
+    {
+        $this->sectionFilter = '';
+    }
+
+    public function getDivisionsProperty()
+    {
+        if (!$this->branchFilter) return collect();
+        return Division::where('branch_id', $this->branchFilter)->orderBy('name')->get();
+    }
+
+    public function getSectionsProperty()
+    {
+        if (!$this->divisionFilter) return collect();
+        return Section::where('division_id', $this->divisionFilter)->orderBy('name')->get();
+    }
+
     private function buildQuery()
     {
         $query = Asset::forUser(auth()->user());
@@ -92,6 +115,8 @@ class AssetReports extends Component
         if ($this->categoryFilter) $query->where('category_id', $this->categoryFilter);
         if ($this->statusFilter) $query->where('status', $this->statusFilter);
         if ($this->branchFilter) $query->where('current_branch_id', $this->branchFilter);
+        if ($this->divisionFilter) $query->where('current_division_id', $this->divisionFilter);
+        if ($this->sectionFilter) $query->where('current_section_id', $this->sectionFilter);
         if ($this->dateFrom) $query->whereDate('date_acquired', '>=', $this->dateFrom);
         if ($this->dateTo) $query->whereDate('date_acquired', '<=', $this->dateTo);
 
@@ -137,6 +162,8 @@ class AssetReports extends Component
         return view('livewire.assets.asset-reports', [
             'categories' => $this->categories,
             'branches' => $this->branches,
+            'divisions' => $this->divisions,
+            'sections' => $this->sections,
             'summary' => $this->assetsSummary,
         ]);
     }

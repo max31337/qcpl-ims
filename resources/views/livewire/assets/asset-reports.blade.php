@@ -7,27 +7,8 @@
     </div>
   </div>
 
-  <div class="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 rounded-lg border bg-white shadow-sm">
-    <input type="date" wire:model="dateFrom" class="h-10 w-full rounded-md border px-3 text-sm" />
-    <input type="date" wire:model="dateTo" class="h-10 w-full rounded-md border px-3 text-sm" />
-    <select wire:model="categoryFilter" class="h-10 w-full rounded-md border px-3 text-sm">
-      <option value="">All Categories</option>
-      @foreach($categories as $c)
-        <option value="{{ $c->id }}">{{ $c->name }}</option>
-      @endforeach
-    </select>
-    <select wire:model="statusFilter" class="h-10 w-full rounded-md border px-3 text-sm">
-      <option value="">All Status</option>
-      <option value="active">Active</option>
-      <option value="condemn">Condemn</option>
-      <option value="disposed">Disposed</option>
-    </select>
-    <select wire:model="branchFilter" class="h-10 w-full rounded-md border px-3 text-sm">
-      <option value="">All Branches</option>
-      @foreach($branches as $b)
-        <option value="{{ $b->id }}">{{ $b->name }}</option>
-      @endforeach
-    </select>
+  <div class="p-4 rounded-lg border bg-white shadow-sm">
+    <x-reports.asset-filters :categories="$categories" :branches="$branches" :divisions="$divisions" :sections="$sections" />
   </div>
 
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

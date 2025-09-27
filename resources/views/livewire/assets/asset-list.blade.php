@@ -6,6 +6,15 @@
             <p class="text-muted-foreground">Manage and track all library assets and properties</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('assets.reports') }}" class="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-accent">
+                <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 3h18v4H3z"/>
+                    <path d="M8 7v14"/>
+                    <path d="M12 7v14"/>
+                    <path d="M16 7v14"/>
+                </svg>
+                Reports
+            </a>
             <div class="inline-flex rounded-md border">
                 <button type="button" wire:click="setViewMode('card')"
                         class="px-3 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-ring"
