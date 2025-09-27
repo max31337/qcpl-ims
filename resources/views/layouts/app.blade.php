@@ -7,14 +7,15 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased bg-background text-foreground overflow-x-hidden">
+    <body class="font-sans antialiased bg-background text-foreground overflow-x-hidden" style="font-family: 'Inter', system-ui, sans-serif;">
         <div class="grid min-h-screen w-full md:grid-cols:[220px_1fr] lg:grid-cols:[280px_1fr] md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             {{-- Sidebar --}}
             <div class="hidden border-r bg-muted/40 md:block sticky top-0 h-screen overflow-hidden">
