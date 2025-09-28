@@ -36,6 +36,9 @@ class User extends Authenticatable implements MustVerifyEmail
         'approved_at',
         'approved_by',
         'password',
+        'mfa_enabled',
+        'mfa_methods',
+        'mfa_verified_at',
     ];
 
     /**
@@ -58,6 +61,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'mfa_enabled' => 'boolean',
+            'mfa_methods' => 'array',
+            'mfa_verified_at' => 'datetime',
         ];
     }
 
@@ -82,4 +88,62 @@ class User extends Authenticatable implements MustVerifyEmail
 
     // UserInvitation relationship
     public function invitation(): BelongsTo { return $this->belongsTo(UserInvitation::class); }
+
+    // MFA relationship
+    public function mfaCodes()
+    {
+        return $this->hasMany(MfaCode::class);
+    }
+
+    // MFA helpers
+    public function hasMfaEnabled(): bool
+    {
+        return $this->mfa_enabled;
+    }
+
+    public function enableMfa(array $methods = ['email']): void
+    {
+        $this->update([
+            'mfa_enabled' => true,
+            'mfa_methods' => $methods,
+        ]);
+    }
+
+    public function disableMfa(): void
+    {
+        $this->update([
+            'mfa_enabled' => false,
+            'mfa_methods' => null,
+            'mfa_verified_at' => null,
+        ]);
+    }
+
+    public function generateMfaCode(string $purpose = 'login'): MfaCode
+    {
+        // Clean up old codes for this user and purpose
+        $this->mfaCodes()
+            ->where('purpose', $purpose)
+            ->where('used', false)
+            ->update(['used' => true]);
+
+        return MfaCode::createForUser($this, $purpose);
+    }
+
+    public function verifyMfaCode(string $code, string $purpose = 'login'): bool
+    {
+        $mfaCode = $this->mfaCodes()
+            ->where('code', $code)
+            ->where('purpose', $purpose)
+            ->where('used', false)
+            ->first();
+
+        if (!$mfaCode || !$mfaCode->isValid()) {
+            return false;
+        }
+
+        $mfaCode->markAsUsed();
+        $this->update(['mfa_verified_at' => now()]);
+
+        return true;
+    }
 }

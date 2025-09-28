@@ -5,10 +5,13 @@ namespace App\Livewire;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules\Password;
 use App\Models\Branch;
 use App\Models\Division;
 use App\Models\Section;
+use App\Models\MfaCode;
+use App\Mail\MfaCodeMail;
 
 #[Layout('layouts.app')]
 class Profile extends Component
@@ -25,6 +28,12 @@ class Profile extends Component
     public $current_password = '';
     public $password = '';
     public $password_confirmation = '';
+    
+    // MFA fields
+    public $mfa_enabled = false;
+    public $mfa_code = '';
+    public $mfa_verification_step = false;
+    public $pending_password_change = false;
     
     // Branch/Division/Section info (read-only for most users)
     public $branch_name = '';
@@ -44,6 +53,7 @@ class Profile extends Component
         $this->email = $user->email ?? '';
         $this->employee_id = $user->employee_id ?? '';
         $this->role = $user->role ?? '';
+        $this->mfa_enabled = $user->mfa_enabled ?? false;
         
         // Load branch/division/section names
         $this->branch_name = $user->branch->name ?? 'Not assigned';
@@ -83,16 +93,98 @@ class Profile extends Component
             'password' => ['required', 'confirmed', Password::defaults()],
         ]);
 
-        auth()->user()->update([
+        $user = auth()->user();
+
+        // If MFA is enabled, require verification
+        if ($user->mfa_enabled && !$this->mfa_verification_step) {
+            $mfaCode = $user->generateMfaCode('password_change');
+            Mail::to($user->email)->send(new MfaCodeMail($user, $mfaCode, 'password_change'));
+            
+            $this->pending_password_change = true;
+            $this->mfa_verification_step = true;
+            
+            session()->flash('mfa_sent', 'A verification code has been sent to your email.');
+            return;
+        }
+
+        // Verify MFA code if required
+        if ($user->mfa_enabled && $this->mfa_verification_step) {
+            $this->validate([
+                'mfa_code' => ['required', 'string', 'size:6'],
+            ]);
+
+            if (!$user->verifyMfaCode($this->mfa_code, 'password_change')) {
+                $this->addError('mfa_code', 'Invalid or expired verification code.');
+                return;
+            }
+        }
+
+        $user->update([
             'password' => Hash::make($this->password),
         ]);
 
-        // Clear password fields
+        // Clear all fields
+        $this->resetPasswordFields();
+
+        session()->flash('password_success', 'Password updated successfully.');
+    }
+
+    public function toggleMfa()
+    {
+        $user = auth()->user();
+        
+        if ($this->mfa_enabled) {
+            // Enabling MFA - send verification code
+            $mfaCode = $user->generateMfaCode('mfa_setup');
+            Mail::to($user->email)->send(new MfaCodeMail($user, $mfaCode, 'mfa_setup'));
+            
+            $this->mfa_verification_step = true;
+            session()->flash('mfa_sent', 'A verification code has been sent to your email to enable MFA.');
+        } else {
+            // Disabling MFA
+            $user->disableMfa();
+            $this->mfa_verification_step = false;
+            session()->flash('success', 'Multi-Factor Authentication has been disabled.');
+        }
+    }
+
+    public function verifyMfaSetup()
+    {
+        $this->validate([
+            'mfa_code' => ['required', 'string', 'size:6'],
+        ]);
+
+        $user = auth()->user();
+        
+        if (!$user->verifyMfaCode($this->mfa_code, 'mfa_setup')) {
+            $this->addError('mfa_code', 'Invalid or expired verification code.');
+            return;
+        }
+
+        $user->enableMfa(['email']);
+        $this->mfa_enabled = true;
+        $this->mfa_verification_step = false;
+        $this->mfa_code = '';
+
+        session()->flash('success', 'Multi-Factor Authentication has been enabled successfully.');
+    }
+
+    public function cancelMfaVerification()
+    {
+        $this->mfa_verification_step = false;
+        $this->pending_password_change = false;
+        $this->mfa_code = '';
+        $this->resetPasswordFields();
+    }
+
+    private function resetPasswordFields()
+    {
         $this->current_password = '';
         $this->password = '';
         $this->password_confirmation = '';
-
-        session()->flash('password_success', 'Password updated successfully.');
+        $this->mfa_verification_step = false;
+        $this->pending_password_change = false;
+        $this->mfa_code = '';
     }
 
     public function render()
