@@ -192,6 +192,25 @@
       </div>
     </x-ui.card>
 
+    <x-ui.card class="p-4">
+      <h3 class="font-medium mb-2">Supplies by category (pie)</h3>
+      @php
+        $sVals=$suppliesValueByCategory?->pluck('v')->all() ?? []; $sNames=$suppliesValueByCategory?->pluck('name')->all() ?? [];
+        $sSum=array_sum($sVals); $sAcc=0; $sSegs=[]; $sPalette=['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
+        foreach($sVals as $i=>$v){ $pct=$sSum?($v/$sSum*100):0; if($pct<=0) continue; $color=$sPalette[$i % count($sPalette)]; $sSegs[]=$color.' '.$sAcc.'% '.($sAcc+=$pct).'%'; }
+        $sBg=$sSegs? 'conic-gradient('.implode(', ',$sSegs).')' : '#e5e7eb';
+      @endphp
+      <div class="flex items-center gap-4">
+        <div class="relative h-36 w-36 rounded-full" style="background: {{ $sBg }}"><div class="absolute inset-10 bg-white rounded-full border"></div></div>
+        <div class="text-sm grid grid-cols-1 gap-1">
+          @foreach($suppliesValueByCategory as $i=>$r)
+            @php $color=$sPalette[$i % count($sPalette)]; @endphp
+            <div class="flex items-center gap-2"><span class="inline-block h-2 w-2 rounded-full" style="background: {{ $color }}"></span> {{ $r->name }} (₱{{ number_format($r->v ?? 0,2) }})</div>
+          @endforeach
+        </div>
+      </div>
+    </x-ui.card>
+
     <x-ui.card class="p-4 xl:col-span-2">
       <h3 class="font-medium mb-2">Asset value by category</h3>
       <x-ui.table>

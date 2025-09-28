@@ -53,7 +53,7 @@ class Analytics extends Component
             });
         }
 
-        $key = sprintf('admin_analytics_v4:%s:%s', $this->period, $this->selectedYear);
+        $key = sprintf('admin_analytics_v5:%s:%s', $this->period, $this->selectedYear);
         $data = Cache::remember($key, 600, function () use ($assets, $supplies, $transfers, $monthExpr) {
             // Set date range and data scope based on period
             if ($this->period === 'alltime') {
@@ -165,6 +165,10 @@ class Analytics extends Component
                 ->leftJoin('categories','assets.category_id','=','categories.id')
                 ->selectRaw("COALESCE(categories.name,'Uncategorized') name, SUM(COALESCE(total_cost,0)) v")
                 ->groupBy('categories.name')->orderByDesc('v')->limit(10)->get();
+            $suppliesValueByCategory = (clone $suppliesInRange)
+                ->leftJoin('categories','supplies.category_id','=','categories.id')
+                ->selectRaw("COALESCE(categories.name,'Uncategorized') name, SUM(current_stock*unit_cost) v")
+                ->groupBy('categories.name')->orderByDesc('v')->limit(10)->get();
             $assetsCountByBranch = (clone $assetsInRange)
                 ->leftJoin('branches','assets.current_branch_id','=','branches.id')
                 ->selectRaw("COALESCE(branches.name,'Unassigned') name, COUNT(*) c")
@@ -187,7 +191,7 @@ class Analytics extends Component
                 ->orderByDesc('c')->limit(10)->get();
 
             return compact(
-                'kpis','labels','assetsMonthly','suppliesMonthly','transfersMonthly','assetsByStatus','assetsValueByCategory','assetsCountByBranch','assetsValueByBranch','stockOut','stockLow','stockOk','topRoutes'
+                'kpis','labels','assetsMonthly','suppliesMonthly','transfersMonthly','assetsByStatus','assetsValueByCategory','suppliesValueByCategory','assetsCountByBranch','assetsValueByBranch','stockOut','stockLow','stockOk','topRoutes'
             );
         });
 
