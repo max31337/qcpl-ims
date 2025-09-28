@@ -1,8 +1,22 @@
 @props([
   'name' => 'circle',
-  'class' => 'h-4 w-4',
+  'class' => '',
+  'size' => 'md',
   'strokeWidth' => 2,
 ])
+
+@php
+  $sizeClasses = [
+    'xs' => 'h-3 w-3',
+    'sm' => 'h-4 w-4', 
+    'md' => 'h-5 w-5',
+    'lg' => 'h-6 w-6',
+    'xl' => 'h-8 w-8',
+  ];
+  
+  $defaultSize = $sizeClasses[$size] ?? $sizeClasses['md'];
+  $iconClass = $class ?: $defaultSize;
+@endphp
 
 @php
   // Minimal Lucide icon map used across the app; add more as needed
@@ -48,6 +62,10 @@
       // Transfer and movement icons
       'transfer' => '<path d="M21 6H3"/><path d="m5 12-2 2 2 2"/><path d="m3 14 2-2-2-2"/><path d="M21 18H3"/><path d="m19 12 2-2-2-2"/><path d="m21 10-2 2 2 2"/>',
       'history' => '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+      'smartphone' => '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
+      'tablet' => '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
+      'monitor' => '<rect width="20" height="14" x="2" y="3" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>',
+      'bot' => '<rect width="18" height="10" x="3" y="11" rx="2"/><circle cx="12" cy="5" r="2"/><path d="m19 13-2 3-2-3m4-3a4 4 0 0 0-8 0"/><path d="M8 21V10a4 4 0 1 1 8 0v11"/>',
       'calendar' => '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
       'search' => '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
       'filter' => '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
@@ -60,7 +78,7 @@
   $path = $paths[$name] ?? $paths['circle'];
 @endphp
 
-<svg {{ $attributes->merge(['class' => $class]) }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<svg {{ $attributes->merge(['class' => $iconClass]) }} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ $strokeWidth }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
   {!! $path !!}
   <title class="sr-only">{{ $name }}</title>
   </svg>

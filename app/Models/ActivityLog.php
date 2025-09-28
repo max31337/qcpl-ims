@@ -14,12 +14,14 @@ class ActivityLog extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'user_id','action','model','model_id','old_values','new_values','description','created_at'
+        'user_id','action','model','model_id','old_values','new_values','description',
+        'ip_address','user_agent','browser','browser_version','platform','device','session_id','request_data','created_at'
     ];
 
     protected $casts = [
         'old_values' => 'array',
         'new_values' => 'array',
+        'request_data' => 'array',
         'created_at' => 'datetime',
     ];
 
@@ -51,11 +53,12 @@ class ActivityLog extends Model
         array $oldValues = [],
         array $newValues = [],
         string $description = null,
-        $userId = null
+        $userId = null,
+        bool $includeSecurityContext = false
     ): self {
         $userId = $userId ?? auth()->id();
         
-        return self::create([
+        $data = [
             'user_id' => $userId,
             'action' => $action,
             'model' => $model ? class_basename($model) : null,
@@ -64,7 +67,42 @@ class ActivityLog extends Model
             'new_values' => $newValues,
             'description' => $description ?? self::generateDescription($action, $model, $oldValues, $newValues),
             'created_at' => now(),
-        ]);
+        ];
+
+        // Add security context if requested (mainly for login/logout events)
+        if ($includeSecurityContext) {
+            $securityContext = self::getSecurityContext();
+            $data = array_merge($data, $securityContext);
+        }
+        
+        return self::create($data);
+    }
+
+    // Get security context from current request
+    private static function getSecurityContext(): array
+    {
+        $request = request();
+        $agent = new \Jenssegers\Agent\Agent();
+        
+        return [
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'browser' => $agent->browser(),
+            'browser_version' => $agent->version($agent->browser()),
+            'platform' => $agent->platform(),
+            'device' => $agent->deviceType(),
+            'session_id' => session()->getId(),
+            'request_data' => [
+                'url' => $request->fullUrl(),
+                'method' => $request->method(),
+                'referer' => $request->header('referer'),
+                'timestamp' => now()->toISOString(),
+                'is_mobile' => $agent->isMobile(),
+                'is_tablet' => $agent->isTablet(),
+                'is_desktop' => $agent->isDesktop(),
+                'is_robot' => $agent->isRobot(),
+            ]
+        ];
     }
 
     // Generate automatic description

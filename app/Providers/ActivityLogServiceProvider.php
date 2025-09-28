@@ -28,13 +28,29 @@ class ActivityLogServiceProvider extends ServiceProvider
     {
         // Listen for login events
         $this->app['events']->listen(Login::class, function ($event) {
-            ActivityLog::log('login', $event->user, [], [], null, $event->user->id);
+            ActivityLog::log(
+                'login', 
+                $event->user, 
+                [], 
+                [], 
+                null, 
+                $event->user->id, 
+                true // Include security context
+            );
         });
 
         // Listen for logout events
         $this->app['events']->listen(Logout::class, function ($event) {
             if ($event->user) {
-                ActivityLog::log('logout', $event->user, [], [], null, $event->user->id);
+                ActivityLog::log(
+                    'logout', 
+                    $event->user, 
+                    [], 
+                    [], 
+                    null, 
+                    $event->user->id, 
+                    true // Include security context
+                );
             }
         });
 
