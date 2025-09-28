@@ -128,6 +128,25 @@
         </div>
     </x-ui.card>
 
+    <!-- Status Legend -->
+    <div class="flex items-center justify-center gap-6 py-3 px-4 bg-muted/30 rounded-lg border border-dashed">
+        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+            <span class="font-medium">Status Legend:</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-green-700 bg-green-100 rounded-full">A</span>
+            <span class="text-sm text-muted-foreground">Active</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-yellow-700 bg-yellow-100 rounded-full">C</span>
+            <span class="text-sm text-muted-foreground">Condemn</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-red-700 bg-red-100 rounded-full">D</span>
+            <span class="text-sm text-muted-foreground">Disposed</span>
+        </div>
+    </div>
+
     <!-- Assets Grid -->
     @if($groups->count() > 0)
         @if($viewMode === 'card')
