@@ -1,11 +1,11 @@
 <div class="h-full flex flex-col bg-white border-r border-border">
     <!-- Brand header -->
-    <div class="flex h-14 items-center border-b border-border px-4">
+    <div class="flex h-16 items-center border-b border-border px-4">
         <a href="{{ route('welcome') }}" class="flex items-center gap-3 font-semibold" wire:navigate>
-            <img src="{{ asset('Quezon_City_Public_Library_logo.png') }}" alt="QC Public Library" class="h-8 w-8 object-contain">
+            <img src="{{ asset('Quezon_City_Public_Library_logo.png') }}" alt="QC Public Library" class="h-12 w-12 object-contain">
             <div class="flex flex-col">
-                <span class="text-sm font-semibold text-foreground">QCPL-IMS</span>
-                <span class="text-xs text-muted-foreground">Inventory Management</span>
+                <span class="text-base font-semibold text-foreground">QCPL-IMS</span>
+                <span class="text-sm text-muted-foreground">Inventory Management</span>
             </div>
         </a>
     </div>
