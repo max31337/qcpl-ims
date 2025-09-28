@@ -11,8 +11,8 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('user_id')->constrained();
             $table->string('action');
-            $table->string('model');
-            $table->unsignedBigInteger('model_id');
+            $table->string('model')->nullable();
+            $table->unsignedBigInteger('model_id')->nullable();
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
             $table->text('description');
