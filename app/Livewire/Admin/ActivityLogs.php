@@ -25,6 +25,7 @@ class ActivityLogs extends Component
     // Modal properties
     public $showModal = false;
     public $selectedLog = null;
+    public $showRawDetails = null; // ID of log for which to show raw details
 
     // Available filter options
     public $availableActions = [
@@ -117,6 +118,12 @@ class ActivityLogs extends Component
     {
         $this->showModal = false;
         $this->selectedLog = null;
+        $this->showRawDetails = null;
+    }
+
+    public function toggleRawDetails($logId)
+    {
+        $this->showRawDetails = $this->showRawDetails === $logId ? null : $logId;
     }
 
     public function render()

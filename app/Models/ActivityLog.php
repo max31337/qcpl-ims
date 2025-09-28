@@ -354,6 +354,11 @@ class ActivityLog extends Model
                 continue;
             }
 
+            // Skip system/internal fields that users don't care about
+            if ($this->shouldSkipField($field)) {
+                continue;
+            }
+
             $changes[] = [
                 'field' => $field,
                 'field_name' => $this->getHumanFieldName($field),
@@ -361,6 +366,162 @@ class ActivityLog extends Model
                 'new_value' => $this->getHumanFieldValue($field, $newValue),
                 'old_raw' => $oldValue,
                 'new_raw' => $newValue,
+            ];
+        }
+
+        return $changes;
+    }
+
+    // Get user-friendly summary of changes
+    public function getChangesSummary(): string
+    {
+        if (!$this->old_values || !$this->new_values) {
+            return '';
+        }
+
+        // Check if this looks like a deletion/disposal first
+        $emptyCount = 0;
+        $totalChanges = 0;
+        foreach ($this->new_values as $field => $value) {
+            if (!$this->shouldSkipField($field)) {
+                $totalChanges++;
+                if (empty($value)) {
+                    $emptyCount++;
+                }
+            }
+        }
+
+        // If record was disposed/deleted, just show the status change
+        if (isset($this->old_values['status']) && isset($this->new_values['status'])) {
+            $oldStatus = $this->getHumanFieldValue('status', $this->old_values['status']);
+            $newStatus = $this->getHumanFieldValue('status', $this->new_values['status']);
+            
+            // If status changed to disposed/deleted and most fields became empty
+            if (in_array(strtolower($newStatus), ['disposed', 'deleted']) && $emptyCount > $totalChanges * 0.7) {
+                return "Asset was {$newStatus} - all data cleared from system";
+            } elseif ($oldStatus !== $newStatus) {
+                return "Status: {$oldStatus} → {$newStatus}";
+            }
+        }
+
+        // If mostly empty, it's a deletion
+        if ($emptyCount > $totalChanges * 0.8) {
+            return "Record was deleted or archived - all data removed";
+        }
+
+        $summaryParts = [];
+
+        // Check for meaningful changes (only if not a deletion)
+        if (isset($this->old_values['current_branch_id']) && isset($this->new_values['current_branch_id'])) {
+            $oldBranch = $this->getHumanFieldValue('current_branch_id', $this->old_values['current_branch_id']);
+            $newBranch = $this->getHumanFieldValue('current_branch_id', $this->new_values['current_branch_id']);
+            if ($oldBranch !== $newBranch && !empty($this->new_values['current_branch_id'])) {
+                $summaryParts[] = "Moved to: {$newBranch}";
+            }
+        }
+
+        if (isset($this->old_values['description']) && isset($this->new_values['description']) && !empty($this->new_values['description'])) {
+            $summaryParts[] = "Description updated";
+        }
+
+        if (isset($this->old_values['unit_cost']) && isset($this->new_values['unit_cost']) && !empty($this->new_values['unit_cost'])) {
+            $oldCost = $this->getHumanFieldValue('unit_cost', $this->old_values['unit_cost']);
+            $newCost = $this->getHumanFieldValue('unit_cost', $this->new_values['unit_cost']);
+            $summaryParts[] = "Cost: {$oldCost} → {$newCost}";
+        }
+
+        return implode(', ', $summaryParts) ?: "Multiple fields updated";
+    }
+
+    // Determine if a field should be skipped from user display
+    private function shouldSkipField(string $field): bool
+    {
+        // Always skip these system fields
+        $alwaysSkipFields = [
+            'id',                    // Internal ID
+            'created_at',           // System timestamp
+            'updated_at',           // System timestamp
+            'created_by',           // Usually not changed
+            'asset_group_id',       // Internal relationship
+        ];
+
+        if (in_array($field, $alwaysSkipFields)) {
+            return true;
+        }
+
+        // For disposal/deletion operations, be very restrictive
+        if ($this->isDisposalOperation()) {
+            $importantFields = [
+                'status',           // The main status change
+            ];
+            return !in_array($field, $importantFields);
+        }
+
+        return false;
+    }
+
+    // Check if this is a disposal/deletion operation
+    private function isDisposalOperation(): bool
+    {
+        if (!$this->old_values || !$this->new_values) {
+            return false;
+        }
+
+        // Check if status changed to disposed/deleted
+        if (isset($this->old_values['status']) && isset($this->new_values['status'])) {
+            $newStatus = strtolower($this->new_values['status']);
+            if (in_array($newStatus, ['disposed', 'deleted'])) {
+                return true;
+            }
+        }
+
+        // Check if most fields became empty (indicating deletion)
+        $emptyCount = 0;
+        $totalChanges = 0;
+        foreach ($this->new_values as $field => $value) {
+            if (!in_array($field, ['id', 'created_at', 'updated_at', 'created_by', 'asset_group_id'])) {
+                $totalChanges++;
+                if (empty($value)) {
+                    $emptyCount++;
+                }
+            }
+        }
+
+        return $emptyCount > $totalChanges * 0.7; // More than 70% of fields became empty
+    }
+
+    // Get all changes including system fields (for raw view)
+    public function getAllChanges(): array
+    {
+        $changes = [];
+        
+        if (!$this->old_values || !$this->new_values) {
+            return $changes;
+        }
+
+        // Get all changed fields (including system fields)
+        $allFields = array_unique(array_merge(
+            array_keys($this->old_values),
+            array_keys($this->new_values)
+        ));
+
+        foreach ($allFields as $field) {
+            $oldValue = $this->old_values[$field] ?? null;
+            $newValue = $this->new_values[$field] ?? null;
+
+            // Skip if values are the same
+            if ($oldValue === $newValue) {
+                continue;
+            }
+
+            $changes[] = [
+                'field' => $field,
+                'field_name' => $this->getHumanFieldName($field),
+                'old_value' => $this->getHumanFieldValue($field, $oldValue),
+                'new_value' => $this->getHumanFieldValue($field, $newValue),
+                'old_raw' => $oldValue,
+                'new_raw' => $newValue,
+                'is_system_field' => $this->shouldSkipField($field),
             ];
         }
 

@@ -333,50 +333,127 @@
                                 </div>
                             @endif
 
-                            <!-- Data Changes (For update activities) -->
+                            <!-- Changes Summary (For update activities) -->
                             @if($selectedLog->old_values && count($selectedLog->old_values) > 0)
                                 <div class="border-t pt-4">
-                                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                        <x-ui.icon name="pencil" size="sm" />
-                                        Changes Made
-                                    </h4>
-                                    <div class="space-y-3">
-                                        @foreach($selectedLog->getFormattedChanges() as $change)
-                                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                                <div class="flex items-center justify-between mb-2">
-                                                    <h5 class="text-sm font-semibold text-gray-900">{{ $change['field_name'] }}</h5>
-                                                    <span class="text-xs text-gray-500 font-mono">{{ $change['field'] }}</span>
-                                                </div>
-                                                <div class="grid grid-cols-2 gap-4">
-                                                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-                                                        <span class="text-xs font-semibold text-red-700 flex items-center gap-1">
-                                                            <x-ui.icon name="minus-circle" size="xs" />
-                                                            Previous Value
-                                                        </span>
-                                                        <div class="text-sm text-red-700 mt-1 font-medium">
-                                                            {{ $change['old_value'] }}
-                                                        </div>
-                                                    </div>
-                                                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                                        <span class="text-xs font-semibold text-green-700 flex items-center gap-1">
-                                                            <x-ui.icon name="plus-circle" size="xs" />
-                                                            New Value
-                                                        </span>
-                                                        <div class="text-sm text-green-700 mt-1 font-medium">
-                                                            {{ $change['new_value'] }}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        @endforeach
-                                        
-                                        @if(count($selectedLog->getFormattedChanges()) === 0)
-                                            <div class="text-center py-4 text-gray-500">
-                                                <x-ui.icon name="info" size="lg" class="mx-auto mb-2 text-gray-400" />
-                                                <p class="text-sm">No detailed changes available</p>
-                                            </div>
+                                    <div class="flex items-center justify-between mb-3">
+                                        <h4 class="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                                            <x-ui.icon name="pencil" size="sm" />
+                                            Changes Made
+                                        </h4>
+                                        @if(count($selectedLog->getAllChanges()) > 0)
+                                            <button wire:click="toggleRawDetails({{ $selectedLog->id }})" 
+                                                    class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-md transition-colors">
+                                                <x-ui.icon name="code" size="xs" />
+                                                @if($showRawDetails === $selectedLog->id) 
+                                                    Hide Technical Details
+                                                @else 
+                                                    Show Technical Details
+                                                @endif
+                                            </button>
                                         @endif
                                     </div>
+
+                                    <!-- User-Friendly Summary -->
+                                    @php $summary = $selectedLog->getChangesSummary(); @endphp
+                                    @if($summary)
+                                        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
+                                            <div class="flex items-start gap-3">
+                                                <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                                    <x-ui.icon name="info" size="sm" class="text-blue-600" />
+                                                </div>
+                                                <div class="flex-1">
+                                                    <h5 class="text-sm font-semibold text-blue-900 mb-1">What Changed</h5>
+                                                    <p class="text-sm text-blue-800 font-medium">{{ $summary }}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    <!-- Important Changes Only -->
+                                    @php $changes = $selectedLog->getFormattedChanges(); @endphp
+                                    @if(count($changes) > 0 && $showRawDetails !== $selectedLog->id)
+                                        <div class="space-y-3">
+                                            @foreach($changes as $change)
+                                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <h5 class="text-sm font-semibold text-gray-900">{{ $change['field_name'] }}</h5>
+                                                    </div>
+                                                    <div class="grid grid-cols-2 gap-4">
+                                                        <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                            <span class="text-xs font-semibold text-red-700 flex items-center gap-1">
+                                                                <x-ui.icon name="minus-circle" size="xs" />
+                                                                Previous
+                                                            </span>
+                                                            <div class="text-sm text-red-700 mt-1 font-medium">
+                                                                {{ $change['old_value'] }}
+                                                            </div>
+                                                        </div>
+                                                        <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                                            <span class="text-xs font-semibold text-green-700 flex items-center gap-1">
+                                                                <x-ui.icon name="plus-circle" size="xs" />
+                                                                New
+                                                            </span>
+                                                            <div class="text-sm text-green-700 mt-1 font-medium">
+                                                                {{ $change['new_value'] }}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    <!-- Raw Details (All Changes) -->
+                                    @if($showRawDetails === $selectedLog->id)
+                                        <div class="space-y-2">
+                                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                                                <div class="flex items-center gap-2 text-yellow-800">
+                                                    <x-ui.icon name="alert-triangle" size="sm" />
+                                                    <span class="text-xs font-semibold">Raw Technical Details</span>
+                                                </div>
+                                                <p class="text-xs text-yellow-700 mt-1">This shows all database field changes, including system-generated data.</p>
+                                            </div>
+
+                                            @foreach($selectedLog->getAllChanges() as $change)
+                                                <div class="bg-gray-50 rounded border border-gray-200 text-xs">
+                                                    <div class="flex items-center justify-between px-3 py-2 border-b border-gray-200 bg-gray-100">
+                                                        <span class="font-semibold text-gray-800">{{ $change['field_name'] }}</span>
+                                                        <div class="flex items-center gap-2">
+                                                            @if($change['is_system_field'])
+                                                                <span class="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs">System Field</span>
+                                                            @endif
+                                                            <span class="font-mono text-gray-500">{{ $change['field'] }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="grid grid-cols-2 divide-x divide-gray-200">
+                                                        <div class="p-3">
+                                                            <div class="text-red-600 font-semibold mb-1">Previous Value</div>
+                                                            <div class="text-gray-800 break-all">{{ $change['old_value'] }}</div>
+                                                        </div>
+                                                        <div class="p-3">
+                                                            <div class="text-green-600 font-semibold mb-1">New Value</div>
+                                                            <div class="text-gray-800 break-all">{{ $change['new_value'] }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    @if(count($changes) === 0 && !$summary)
+                                        <div class="text-center py-6 text-gray-500">
+                                            <x-ui.icon name="info" size="lg" class="mx-auto mb-2 text-gray-400" />
+                                            <p class="text-sm font-medium">No detailed changes to display</p>
+                                            <p class="text-xs text-gray-400 mt-1">This activity may not have tracked field changes</p>
+                                        </div>
+                                    @elseif(count($changes) === 0 && $summary && $showRawDetails !== $selectedLog->id)
+                                        <div class="text-center py-4 text-green-600 bg-green-50 rounded-lg border border-green-200">
+                                            <x-ui.icon name="check-circle" size="lg" class="mx-auto mb-2" />
+                                            <p class="text-sm font-medium">Summary view active</p>
+                                            <p class="text-xs text-green-700 mt-1">The change summary above shows the key information. Click "Show Technical Details" for raw data.</p>
+                                        </div>
+                                    @endif
                                 </div>
                             @endif
 
