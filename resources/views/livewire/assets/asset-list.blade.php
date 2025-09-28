@@ -22,11 +22,14 @@
             <div class="inline-flex rounded-md border">
                 <button type="button" wire:click="setViewMode('card')"
                         class="px-3 py-2 text-sm font-medium rounded-l-md focus:outline-none focus:ring-2 focus:ring-ring"
+                        :class="{ 'bg-accent text-accent-foreground': $wire.viewMode === 'card' }">
+                    <x-ui.icon name="grid-3x3" class="mr-2 h-4 w-4" />
                     Cards
                 </button>
                 <button type="button" wire:click="setViewMode('list')"
                         class="px-3 py-2 text-sm font-medium rounded-r-md focus:outline-none focus:ring-2 focus:ring-ring border-l"
                         :class="{ 'bg-accent text-accent-foreground': $wire.viewMode === 'list' }">
+                    <x-ui.icon name="list" class="mr-2 h-4 w-4" />
                     List
                 </button>
             </div>
