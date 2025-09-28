@@ -95,6 +95,12 @@
                 'route' => '#',
                 'active' => true,
             ];
+        } elseif (request()->routeIs('admin.activity-logs')) {
+            $crumbs[] = [
+                'label' => 'Activity Logs',
+                'route' => '#',
+                'active' => true,
+            ];
         } elseif (request()->routeIs('admin.assets.reports')) {
             $crumbs[] = [
                 'label' => 'Assets Management',

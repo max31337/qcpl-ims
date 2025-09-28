@@ -6,6 +6,7 @@ use App\Livewire\Admin\UserManagement;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Analytics as AdminAnalytics;
 use App\Livewire\Admin\TransferHistories;
+use App\Livewire\Admin\ActivityLogs;
 use App\Livewire\Profile;
 
 Route::view('/', 'welcome')->name('welcome');
@@ -34,6 +35,11 @@ Route::get('/admin/transfer-histories', \App\Livewire\Admin\TransferHistories::c
 Route::get('/admin/invitations', UserManagement::class)
     ->middleware(['auth', 'verified'])
     ->name('admin.invitations');
+
+// Admin - Activity Logs
+Route::get('/admin/activity-logs', ActivityLogs::class)
+    ->middleware(['auth', 'verified'])
+    ->name('admin.activity-logs');
 
 // Admin - Assets Reports
 Route::middleware(['auth', 'verified'/*, 'check.role:admin,observer'*/])

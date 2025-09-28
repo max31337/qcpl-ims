@@ -11,6 +11,7 @@ use App\Models\Branch;
 use App\Models\Division;
 use App\Models\Section;
 use App\Models\MfaCode;
+use App\Models\ActivityLog;
 use App\Mail\MfaCodeMail;
 
 #[Layout('layouts.app')]
@@ -178,7 +179,10 @@ class Profile extends Component
             'employee_id' => ['nullable', 'string', 'max:255'],
         ]);
 
-        auth()->user()->update([
+        $user = auth()->user();
+        $oldValues = $user->only(['name', 'firstname', 'middlename', 'lastname', 'username', 'email', 'employee_id']);
+        
+        $user->update([
             'name' => $this->name,
             'firstname' => $this->firstname,
             'middlename' => $this->middlename,
@@ -187,6 +191,9 @@ class Profile extends Component
             'email' => $this->email,
             'employee_id' => $this->employee_id,
         ]);
+
+        // Log profile update
+        ActivityLog::log('profile_updated', $user, $oldValues, $user->getChanges());
 
         session()->flash('success', 'Profile updated successfully.');
     }

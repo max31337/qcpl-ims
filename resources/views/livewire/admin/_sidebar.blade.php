@@ -53,5 +53,12 @@
             <x-ui.icon name="users" />
             User Management
         </a>
+        
+        <a href="{{ route('admin.activity-logs') }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.activity-logs') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+           wire:navigate>
+            <x-ui.icon name="activity" />
+            Activity Logs
+        </a>
     </nav>
 </div>
