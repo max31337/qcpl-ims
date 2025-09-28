@@ -491,7 +491,7 @@
                                         </div>
                                     @elseif(count($changes) === 0 && $summary && $showRawDetails !== $selectedLog->id)
                                         <div class="text-center py-4 text-green-600 bg-green-50 rounded-lg border border-green-200">
-                                            <x-ui.icon name="check-circle" size="sm" class="mx-auto mb-2" />
+                                            <x-ui.icon name="check-circle" class="h-4 w-4 mx-auto mb-2" />
                                             <p class="text-sm font-medium">Summary view active</p>
                                             <p class="text-xs text-green-700 mt-1">The change summary above shows the key information. Click "Show Technical Details" for raw data.</p>
                                         </div>
