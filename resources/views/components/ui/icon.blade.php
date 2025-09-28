@@ -42,6 +42,16 @@
       'layout' => '<rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/>',
       // Additional for dashboard
       'activity' => '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
+      // Transfer and movement icons
+      'transfer' => '<path d="M21 6H3"/><path d="m5 12-2 2 2 2"/><path d="m3 14 2-2-2-2"/><path d="M21 18H3"/><path d="m19 12 2-2-2-2"/><path d="m21 10-2 2 2 2"/>',
+      'history' => '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+      'calendar' => '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/>',
+      'search' => '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
+      'filter' => '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+      'eye' => '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+      'list' => '<line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/>',
+      'chevron-up' => '<path d="m18 15-6-6-6 6"/>',
+      'chevron-down' => '<path d="m6 9 6 6 6-6"/>',
   ];
   $path = $paths[$name] ?? $paths['circle'];
 @endphp
