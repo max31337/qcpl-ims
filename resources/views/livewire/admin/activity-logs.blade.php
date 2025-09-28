@@ -338,40 +338,44 @@
                                 <div class="border-t pt-4">
                                     <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                                         <x-ui.icon name="pencil" size="sm" />
-                                        Data Changes
+                                        Changes Made
                                     </h4>
                                     <div class="space-y-3">
-                                        @foreach($selectedLog->old_values as $field => $oldValue)
-                                            <div class="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded-lg">
-                                                <div>
-                                                    <span class="text-xs font-semibold text-gray-700">Field</span>
-                                                    <div class="text-sm font-medium">{{ $field }}</div>
+                                        @foreach($selectedLog->getFormattedChanges() as $change)
+                                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                                <div class="flex items-center justify-between mb-2">
+                                                    <h5 class="text-sm font-semibold text-gray-900">{{ $change['field_name'] }}</h5>
+                                                    <span class="text-xs text-gray-500 font-mono">{{ $change['field'] }}</span>
                                                 </div>
-                                                <div>
-                                                    <span class="text-xs font-semibold text-red-700">Old Value</span>
-                                                    <div class="text-sm text-red-600">
-                                                        @if(is_array($oldValue))
-                                                            <pre class="text-xs bg-red-50 p-2 rounded border overflow-x-auto">{{ json_encode($oldValue, JSON_PRETTY_PRINT) }}</pre>
-                                                        @else
-                                                            {{ $oldValue ?: '(empty)' }}
-                                                        @endif
+                                                <div class="grid grid-cols-2 gap-4">
+                                                    <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                                                        <span class="text-xs font-semibold text-red-700 flex items-center gap-1">
+                                                            <x-ui.icon name="minus-circle" size="xs" />
+                                                            Previous Value
+                                                        </span>
+                                                        <div class="text-sm text-red-700 mt-1 font-medium">
+                                                            {{ $change['old_value'] }}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <span class="text-xs font-semibold text-green-700">New Value</span>
-                                                    <div class="text-sm text-green-600">
-                                                        @php
-                                                            $newValue = $selectedLog->new_values[$field] ?? null;
-                                                        @endphp
-                                                        @if(is_array($newValue))
-                                                            <pre class="text-xs bg-green-50 p-2 rounded border overflow-x-auto">{{ json_encode($newValue, JSON_PRETTY_PRINT) }}</pre>
-                                                        @else
-                                                            {{ $newValue ?: '(empty)' }}
-                                                        @endif
+                                                    <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                                        <span class="text-xs font-semibold text-green-700 flex items-center gap-1">
+                                                            <x-ui.icon name="plus-circle" size="xs" />
+                                                            New Value
+                                                        </span>
+                                                        <div class="text-sm text-green-700 mt-1 font-medium">
+                                                            {{ $change['new_value'] }}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         @endforeach
+                                        
+                                        @if(count($selectedLog->getFormattedChanges()) === 0)
+                                            <div class="text-center py-4 text-gray-500">
+                                                <x-ui.icon name="info" size="lg" class="mx-auto mb-2 text-gray-400" />
+                                                <p class="text-sm">No detailed changes available</p>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             @endif

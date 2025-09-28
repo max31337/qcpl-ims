@@ -188,4 +188,182 @@ class ActivityLog extends Model
             default => 'text-gray-600',
         };
     }
+
+    // Get human-readable field name
+    public function getHumanFieldName(string $field): string
+    {
+        $fieldMappings = [
+            // Asset fields
+            'property_number' => 'Property Number',
+            'asset_group_id' => 'Asset Group',
+            'description' => 'Description',
+            'quantity' => 'Quantity',
+            'date_acquired' => 'Date Acquired',
+            'unit_cost' => 'Unit Cost',
+            'total_cost' => 'Total Cost',
+            'category_id' => 'Category',
+            'status' => 'Status',
+            'source' => 'Source',
+            'image_path' => 'Image',
+            'current_branch_id' => 'Current Branch',
+            'current_division_id' => 'Current Division',
+            'current_section_id' => 'Current Section',
+            'created_by' => 'Created By',
+            
+            // Supply fields
+            'code' => 'Supply Code',
+            'stock_quantity' => 'Stock Quantity',
+            'unit_price' => 'Unit Price',
+            'minimum_stock' => 'Minimum Stock',
+            'supplier' => 'Supplier',
+            
+            // User fields
+            'name' => 'Name',
+            'email' => 'Email',
+            'role' => 'Role',
+            'branch_id' => 'Branch',
+            'division_id' => 'Division',
+            'section_id' => 'Section',
+            'is_active' => 'Active Status',
+            'mfa_enabled' => 'MFA Enabled',
+            
+            // General fields
+            'id' => 'ID',
+            'created_at' => 'Created At',
+            'updated_at' => 'Updated At',
+        ];
+
+        return $fieldMappings[$field] ?? ucwords(str_replace('_', ' ', $field));
+    }
+
+    // Get human-readable field value
+    public function getHumanFieldValue(string $field, $value): string
+    {
+        if ($value === null || $value === '') {
+            return '(empty)';
+        }
+
+        // Handle different field types
+        switch ($field) {
+            case 'status':
+                return match($value) {
+                    'active' => 'Active',
+                    'condemned' => 'Condemned',
+                    'disposed' => 'Disposed',
+                    'under_repair' => 'Under Repair',
+                    default => ucfirst($value),
+                };
+
+            case 'role':
+                return match($value) {
+                    'admin' => 'Administrator',
+                    'property_officer' => 'Property Officer',
+                    'supply_officer' => 'Supply Officer',
+                    'staff' => 'Staff',
+                    'observer' => 'Observer',
+                    default => ucwords(str_replace('_', ' ', $value)),
+                };
+
+            case 'source':
+                return match($value) {
+                    'procurement' => 'Procurement',
+                    'donation' => 'Donation',
+                    'transfer' => 'Transfer',
+                    'lease' => 'Lease',
+                    default => ucfirst($value),
+                };
+
+            // ID fields - try to resolve to names
+            case 'asset_group_id':
+                $group = AssetGroup::find($value);
+                return $group ? "#{$value} - {$group->description}" : "Asset Group #{$value}";
+
+            case 'category_id':
+                $category = Category::find($value);
+                return $category ? "#{$value} - {$category->name}" : "Category #{$value}";
+
+            case 'current_branch_id':
+            case 'branch_id':
+                $branch = Branch::find($value);
+                return $branch ? "#{$value} - {$branch->name}" : "Branch #{$value}";
+
+            case 'current_division_id':
+            case 'division_id':
+                $division = Division::find($value);
+                return $division ? "#{$value} - {$division->name}" : "Division #{$value}";
+
+            case 'current_section_id':
+            case 'section_id':
+                $section = Section::find($value);
+                return $section ? "#{$value} - {$section->name}" : "Section #{$value}";
+
+            case 'created_by':
+                $user = User::find($value);
+                return $user ? "#{$value} - {$user->name}" : "User #{$value}";
+
+            // Boolean fields
+            case 'is_active':
+            case 'mfa_enabled':
+                return $value ? 'Yes' : 'No';
+
+            // Date fields
+            case 'date_acquired':
+            case 'created_at':
+            case 'updated_at':
+                if ($value instanceof \Carbon\Carbon) {
+                    return $value->format('M d, Y g:i A');
+                }
+                return \Carbon\Carbon::parse($value)->format('M d, Y g:i A');
+
+            // Cost fields
+            case 'unit_cost':
+            case 'total_cost':
+            case 'unit_price':
+                return '₱' . number_format((float)$value, 2);
+
+            // Image fields
+            case 'image_path':
+                return $value ? basename($value) : '(no image)';
+
+            default:
+                return (string)$value;
+        }
+    }
+
+    // Get formatted changes for display
+    public function getFormattedChanges(): array
+    {
+        $changes = [];
+        
+        if (!$this->old_values || !$this->new_values) {
+            return $changes;
+        }
+
+        // Get all changed fields
+        $allFields = array_unique(array_merge(
+            array_keys($this->old_values),
+            array_keys($this->new_values)
+        ));
+
+        foreach ($allFields as $field) {
+            $oldValue = $this->old_values[$field] ?? null;
+            $newValue = $this->new_values[$field] ?? null;
+
+            // Skip if values are the same
+            if ($oldValue === $newValue) {
+                continue;
+            }
+
+            $changes[] = [
+                'field' => $field,
+                'field_name' => $this->getHumanFieldName($field),
+                'old_value' => $this->getHumanFieldValue($field, $oldValue),
+                'new_value' => $this->getHumanFieldValue($field, $newValue),
+                'old_raw' => $oldValue,
+                'new_raw' => $newValue,
+            ];
+        }
+
+        return $changes;
+    }
 }
