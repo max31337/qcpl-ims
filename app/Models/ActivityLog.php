@@ -249,6 +249,7 @@ class ActivityLog extends Model
                 return match($value) {
                     'active' => 'Active',
                     'condemned' => 'Condemned',
+                    'condemn' => 'Condemned',
                     'disposed' => 'Disposed',
                     'under_repair' => 'Under Repair',
                     default => ucfirst($value),
@@ -396,8 +397,8 @@ class ActivityLog extends Model
             $oldStatus = $this->getHumanFieldValue('status', $this->old_values['status']);
             $newStatus = $this->getHumanFieldValue('status', $this->new_values['status']);
             
-            // If status changed to disposed/deleted and most fields became empty
-            if (in_array(strtolower($newStatus), ['disposed', 'deleted']) && $emptyCount > $totalChanges * 0.7) {
+            // If status changed to disposed/condemned/deleted and most fields became empty
+            if (in_array(strtolower($newStatus), ['disposed', 'deleted', 'condemned']) && $emptyCount > $totalChanges * 0.7) {
                 return "Asset was {$newStatus} - all data cleared from system";
             } elseif ($oldStatus !== $newStatus) {
                 return "Status: {$oldStatus} → {$newStatus}";
@@ -449,12 +450,14 @@ class ActivityLog extends Model
             return true;
         }
 
-        // For disposal/deletion operations, be very restrictive
+        // Special logic for disposal operations - ONLY show status field
         if ($this->isDisposalOperation()) {
-            $importantFields = [
-                'status',           // The main status change
-            ];
-            return !in_array($field, $importantFields);
+            return $field !== 'status';
+        }
+
+        // For regular operations, skip fields that became empty and aren't meaningful
+        if (isset($this->new_values[$field]) && empty($this->new_values[$field])) {
+            return true;
         }
 
         return false;
@@ -467,19 +470,19 @@ class ActivityLog extends Model
             return false;
         }
 
-        // Check if status changed to disposed/deleted
+        // Primary check: status changed to a disposal state
         if (isset($this->old_values['status']) && isset($this->new_values['status'])) {
             $newStatus = strtolower($this->new_values['status']);
-            if (in_array($newStatus, ['disposed', 'deleted'])) {
+            if (in_array($newStatus, ['disposed', 'deleted', 'condemned', 'condemn'])) {
                 return true;
             }
         }
 
-        // Check if most fields became empty (indicating deletion)
+        // Secondary check: many fields became empty (mass deletion)
         $emptyCount = 0;
         $totalChanges = 0;
         foreach ($this->new_values as $field => $value) {
-            if (!in_array($field, ['id', 'created_at', 'updated_at', 'created_by', 'asset_group_id'])) {
+            if (!in_array($field, ['id', 'created_at', 'updated_at', 'created_by', 'asset_group_id', 'status'])) {
                 $totalChanges++;
                 if (empty($value)) {
                     $emptyCount++;
@@ -487,7 +490,8 @@ class ActivityLog extends Model
             }
         }
 
-        return $emptyCount > $totalChanges * 0.7; // More than 70% of fields became empty
+        // If more than 80% of non-system fields became empty, it's probably a disposal
+        return $totalChanges > 0 && $emptyCount > $totalChanges * 0.8;
     }
 
     // Get all changes including system fields (for raw view)
