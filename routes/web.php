@@ -50,6 +50,7 @@ Route::middleware(['auth', 'verified'])->prefix('assets')->name('assets.')->grou
     Route::get('/{assetId}/edit', \App\Livewire\Assets\AssetForm::class)->name('edit');
     Route::get('/{assetId}/transfer', \App\Livewire\Assets\AssetTransfer::class)->name('transfer');
     Route::get('/{assetId}/history', \App\Livewire\Assets\AssetHistory::class)->name('history');
+    Route::get('/transfer-histories', TransferHistories::class)->name('transfer-histories');
     Route::get('/reports', \App\Livewire\Assets\AssetReports::class)->name('reports');
 });
 

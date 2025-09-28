@@ -27,10 +27,17 @@
         </a>
         
         <a href="{{ route('assets.index') }}"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.*') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.*') && !request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
            wire:navigate>
             <x-ui.icon name="boxes" />
             Assets Management
+        </a>
+        
+        <a href="{{ route('assets.transfer-histories') }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ml-3 {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+           wire:navigate>
+            <x-ui.icon name="history" />
+            Transfer Histories
         </a>
         
         <a href="{{ route('supplies.index') }}"
