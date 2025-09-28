@@ -267,7 +267,12 @@
     <x-ui.card class="p-4 xl:col-span-2">
       <div class="flex items-center justify-between mb-2">
         <h3 class="font-medium">Top transfer routes</h3>
-        <x-ui.icon name="arrow-right" />
+        <a href="{{ route('admin.transfer-histories') }}" 
+           class="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors"
+           title="View all transfer histories">
+          <span class="text-xs">View All</span>
+          <x-ui.icon name="arrow-right" class="h-4 w-4" />
+        </a>
       </div>
       <x-ui.table>
         <thead><tr><th class="px-3 py-2">From → To</th><th class="px-3 py-2 w-20 text-right">Count</th></tr></thead>
