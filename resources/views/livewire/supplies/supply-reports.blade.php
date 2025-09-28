@@ -1,3 +1,8 @@
+<div>
+    <x-ui-card title="Supply Reports">
+        <div class="text-sm text-gray-500">Reports coming soon. Use this page to export stock reports and historical adjustments.</div>
+    </x-ui-card>
+</div>
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>

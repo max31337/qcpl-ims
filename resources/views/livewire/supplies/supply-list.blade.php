@@ -1,3 +1,49 @@
+<div>
+    <x-ui-card title="Supplies">
+        <div class="flex items-center gap-3 mb-4">
+            <x-ui-input wire:model.debounce.300ms="search" placeholder="Search supplies..." />
+            <x-ui-select wire:model="category">
+                <option value="">All Categories</option>
+                @foreach($categories as $c)
+                    <option value="{{ $c->id }}">{{ $c->name }}</option>
+                @endforeach
+            </x-ui-select>
+            <x-ui-button wire:click="$emit('openCreateSupply')">New Supply</x-ui-button>
+        </div>
+
+        <div class="overflow-hidden bg-white rounded shadow">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="p-2">Name</th>
+                        <th class="p-2">SKU</th>
+                        <th class="p-2">Qty</th>
+                        <th class="p-2">Category</th>
+                        <th class="p-2">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($supplies as $s)
+                        <tr class="border-t">
+                            <td class="p-2">{{ $s->name }}</td>
+                            <td class="p-2">{{ $s->code }}</td>
+                            <td class="p-2">{{ $s->quantity }}</td>
+                            <td class="p-2">{{ optional($s->category)->name }}</td>
+                            <td class="p-2">
+                                <x-ui-button wire:click="$emit('editSupply', {{ $s->id }})" size="sm">Edit</x-ui-button>
+                                <x-ui-button wire:click="$emit('adjustStock', {{ $s->id }})" variant="secondary" size="sm">Adjust</x-ui-button>
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+
+        <div class="mt-4">
+            {{ $supplies->links() }}
+        </div>
+    </x-ui-card>
+</div>
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>

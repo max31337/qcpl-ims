@@ -52,6 +52,10 @@ Route::middleware(['auth', 'verified', 'mfa'])->prefix('supplies')->name('suppli
     Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
     Route::get('/{id}/edit', \App\Livewire\Supplies\SupplyForm::class)->name('edit');
     Route::get('/{id}/adjust', \App\Livewire\Supplies\StockAdjustment::class)->name('adjust');
+    // Supply officer analytics dashboard (role-guarded)
+    Route::get('/analytics', \App\Http\Livewire\Supplies\SupplyAnalytics::class)
+        ->middleware(['check.role:supply_officer'])
+        ->name('analytics');
     Route::get('/reports', \App\Livewire\Supplies\SupplyReports::class)->name('reports');
 });
 

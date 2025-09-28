@@ -1,3 +1,30 @@
+<div>
+    <x-ui-card title="Stock Adjustment">
+        @if($supply)
+            <div class="mb-4">
+                <div class="font-medium">{{ $supply->name }}</div>
+                <div class="text-sm text-gray-500">SKU: {{ $supply->code }}</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <x-ui-label for="quantity">Quantity</x-ui-label>
+                    <x-ui-input id="quantity" type="number" wire:model.defer="quantity" />
+                </div>
+                <div>
+                    <x-ui-label for="remarks">Remarks</x-ui-label>
+                    <x-ui-input id="remarks" wire:model.defer="remarks" />
+                </div>
+            </div>
+
+            <div class="mt-4 flex justify-end">
+                <x-ui-button wire:click="adjust">Apply</x-ui-button>
+            </div>
+        @else
+            <div class="text-sm text-gray-500">Supply not found.</div>
+        @endif
+    </x-ui-card>
+</div>
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
