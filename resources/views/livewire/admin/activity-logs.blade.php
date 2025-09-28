@@ -277,6 +277,48 @@
                                 </div>
                             </div>
 
+                            <!-- Asset Information (For Asset activities) -->
+                            @if($selectedLog->model === 'Asset' && ($selectedLog->old_values || $selectedLog->new_values))
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <x-ui.icon name="package" class="h-3 w-3 text-blue-600" />
+                                        Asset Information
+                                    </h4>
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <div class="grid grid-cols-2 gap-4 text-sm">
+                                            @if($selectedLog->old_values['property_number'] ?? null)
+                                                <div>
+                                                    <span class="font-medium text-blue-800">Property Number:</span>
+                                                    <div class="text-blue-700 font-mono">{{ $selectedLog->old_values['property_number'] }}</div>
+                                                </div>
+                                            @endif
+                                            @if($selectedLog->old_values['description'] ?? null)
+                                                <div>
+                                                    <span class="font-medium text-blue-800">Asset Description:</span>
+                                                    <div class="text-blue-700">{{ $selectedLog->old_values['description'] }}</div>
+                                                </div>
+                                            @endif
+                                            @if(($selectedLog->old_values['unit_cost'] ?? null) && ($selectedLog->old_values['quantity'] ?? null))
+                                                <div>
+                                                    <span class="font-medium text-blue-800">Value:</span>
+                                                    <div class="text-blue-700">
+                                                        ₱{{ number_format($selectedLog->old_values['unit_cost'], 2) }} 
+                                                        × {{ $selectedLog->old_values['quantity'] }} = 
+                                                        ₱{{ number_format($selectedLog->old_values['unit_cost'] * $selectedLog->old_values['quantity'], 2) }}
+                                                    </div>
+                                                </div>
+                                            @endif
+                                            @if($selectedLog->old_values['date_acquired'] ?? null)
+                                                <div>
+                                                    <span class="font-medium text-blue-800">Date Acquired:</span>
+                                                    <div class="text-blue-700">{{ \Carbon\Carbon::parse($selectedLog->old_values['date_acquired'])->format('M d, Y') }}</div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <!-- Security Info (Login/Logout only) -->
                             @if($selectedLog->ip_address)
                                 <div class="border-t pt-4">
@@ -449,7 +491,7 @@
                                         </div>
                                     @elseif(count($changes) === 0 && $summary && $showRawDetails !== $selectedLog->id)
                                         <div class="text-center py-4 text-green-600 bg-green-50 rounded-lg border border-green-200">
-                                            <x-ui.icon name="check-circle" size="lg" class="mx-auto mb-2" />
+                                            <x-ui.icon name="check-circle" size="sm" class="mx-auto mb-2" />
                                             <p class="text-sm font-medium">Summary view active</p>
                                             <p class="text-xs text-green-700 mt-1">The change summary above shows the key information. Click "Show Technical Details" for raw data.</p>
                                         </div>

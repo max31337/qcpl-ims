@@ -392,14 +392,14 @@ class ActivityLog extends Model
             }
         }
 
-        // If record was disposed/deleted, just show the status change
+        // If record was disposed/deleted, show clean status change
         if (isset($this->old_values['status']) && isset($this->new_values['status'])) {
             $oldStatus = $this->getHumanFieldValue('status', $this->old_values['status']);
             $newStatus = $this->getHumanFieldValue('status', $this->new_values['status']);
             
             // If status changed to disposed/condemned/deleted and most fields became empty
             if (in_array(strtolower($newStatus), ['disposed', 'deleted', 'condemned']) && $emptyCount > $totalChanges * 0.7) {
-                return "Asset was {$newStatus} - all data cleared from system";
+                return "Asset {$newStatus} - data cleared from system";
             } elseif ($oldStatus !== $newStatus) {
                 return "Status: {$oldStatus} → {$newStatus}";
             }
@@ -450,12 +450,35 @@ class ActivityLog extends Model
             return true;
         }
 
-        // Special logic for disposal operations - ONLY show status field
+        // Special logic for disposal operations - hide ALL individual fields since we show summary + asset info
         if ($this->isDisposalOperation()) {
-            return $field !== 'status';
+            return true; // Hide all individual field changes for disposal operations
         }
 
-        // For regular operations, skip fields that became empty and aren't meaningful
+        // For regular operations, show meaningful changes
+        $meaningfulFields = [
+            'property_number',      // Asset identifier
+            'description',          // What the asset is
+            'status',              // Status changes
+            'quantity',            // Quantity changes
+            'unit_cost',           // Cost changes
+            'total_cost',          // Total cost changes
+            'current_branch_id',   // Location changes
+            'current_division_id', // Location changes
+            'current_section_id',  // Location changes
+            'category_id',         // Category changes
+            'source',              // Source changes
+            'date_acquired',       // Date changes
+            'supplier',            // For supplies
+            'stock_quantity',      // For supplies
+        ];
+
+        // Skip fields that are not meaningful or became empty in non-disposal operations
+        if (!in_array($field, $meaningfulFields)) {
+            return true;
+        }
+
+        // Skip if field became empty in regular operations (not disposal)
         if (isset($this->new_values[$field]) && empty($this->new_values[$field])) {
             return true;
         }
