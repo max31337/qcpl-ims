@@ -160,41 +160,43 @@
                                     <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                                         New Password <span class="text-red-500">*</span>
                                     </label>
-                                    <x-ui.input wire:model.live="password" type="password" required class="mt-1.5" x-data="passwordStrength" @input="checkStrength($event.target.value)" />
+                                    <x-ui.input wire:model.live="password" type="password" required class="mt-1.5" />
                                     @error('password') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                                     
                                     <!-- Password Strength Indicator -->
-                                    <div class="mt-2" x-show="password.length > 0" x-transition>
-                                        <div class="flex items-center gap-2 mb-2">
-                                            <span class="text-xs font-medium">Password Strength:</span>
-                                            <span class="text-xs font-semibold" :class="strengthColor" x-text="strengthText"></span>
+                                    @if(strlen($password) > 0)
+                                        <div class="mt-2" x-data x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100">
+                                            <div class="flex items-center gap-2 mb-2">
+                                                <span class="text-xs font-medium">Password Strength:</span>
+                                                <span class="text-xs font-semibold {{ $this->passwordStrengthColor }}">{{ $this->passwordStrengthText }}</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="h-2 rounded-full transition-all duration-300 {{ $this->passwordStrengthBg }}" style="width: {{ $this->passwordStrengthPercentage }}%"></div>
+                                            </div>
+                                            <div class="mt-2 space-y-1">
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <span class="{{ $passwordChecks['length'] ? 'text-green-600' : 'text-gray-400' }}">✓</span>
+                                                    <span>At least 8 characters</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <span class="{{ $passwordChecks['uppercase'] ? 'text-green-600' : 'text-gray-400' }}">✓</span>
+                                                    <span>Contains uppercase letter</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <span class="{{ $passwordChecks['lowercase'] ? 'text-green-600' : 'text-gray-400' }}">✓</span>
+                                                    <span>Contains lowercase letter</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <span class="{{ $passwordChecks['numbers'] ? 'text-green-600' : 'text-gray-400' }}">✓</span>
+                                                    <span>Contains number</span>
+                                                </div>
+                                                <div class="flex items-center gap-2 text-xs">
+                                                    <span class="{{ $passwordChecks['special'] ? 'text-green-600' : 'text-gray-400' }}">✓</span>
+                                                    <span>Contains special character</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div class="w-full bg-gray-200 rounded-full h-2">
-                                            <div class="h-2 rounded-full transition-all duration-300" :class="strengthBg" :style="`width: ${strengthPercentage}%`"></div>
-                                        </div>
-                                        <div class="mt-2 space-y-1">
-                                            <div class="flex items-center gap-2 text-xs">
-                                                <span :class="checks.length ? 'text-green-600' : 'text-gray-400'">✓</span>
-                                                <span>At least 8 characters</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-xs">
-                                                <span :class="checks.uppercase ? 'text-green-600' : 'text-gray-400'">✓</span>
-                                                <span>Contains uppercase letter</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-xs">
-                                                <span :class="checks.lowercase ? 'text-green-600' : 'text-gray-400'">✓</span>
-                                                <span>Contains lowercase letter</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-xs">
-                                                <span :class="checks.numbers ? 'text-green-600' : 'text-gray-400'">✓</span>
-                                                <span>Contains number</span>
-                                            </div>
-                                            <div class="flex items-center gap-2 text-xs">
-                                                <span :class="checks.special ? 'text-green-600' : 'text-gray-400'">✓</span>
-                                                <span>Contains special character</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    @endif
                                 </div>
 
                                 <div>
@@ -294,72 +296,3 @@
         </div>
     </div>
 </div>
-
-<script>
-document.addEventListener('alpine:init', () => {
-    Alpine.data('passwordStrength', () => ({
-        password: '',
-        strength: 0,
-        checks: {
-            length: false,
-            uppercase: false,
-            lowercase: false,
-            numbers: false,
-            special: false
-        },
-        
-        get strengthPercentage() {
-            return (this.strength / 5) * 100;
-        },
-        
-        get strengthText() {
-            if (this.strength <= 1) return 'Very Weak';
-            if (this.strength <= 2) return 'Weak';
-            if (this.strength <= 3) return 'Fair';
-            if (this.strength <= 4) return 'Good';
-            return 'Strong';
-        },
-        
-        get strengthColor() {
-            if (this.strength <= 1) return 'text-red-600';
-            if (this.strength <= 2) return 'text-orange-600';
-            if (this.strength <= 3) return 'text-yellow-600';
-            if (this.strength <= 4) return 'text-blue-600';
-            return 'text-green-600';
-        },
-        
-        get strengthBg() {
-            if (this.strength <= 1) return 'bg-red-500';
-            if (this.strength <= 2) return 'bg-orange-500';
-            if (this.strength <= 3) return 'bg-yellow-500';
-            if (this.strength <= 4) return 'bg-blue-500';
-            return 'bg-green-500';
-        },
-        
-        checkStrength(password) {
-            this.password = password;
-            this.strength = 0;
-            
-            // Check length
-            this.checks.length = password.length >= 8;
-            if (this.checks.length) this.strength++;
-            
-            // Check uppercase
-            this.checks.uppercase = /[A-Z]/.test(password);
-            if (this.checks.uppercase) this.strength++;
-            
-            // Check lowercase
-            this.checks.lowercase = /[a-z]/.test(password);
-            if (this.checks.lowercase) this.strength++;
-            
-            // Check numbers
-            this.checks.numbers = /\d/.test(password);
-            if (this.checks.numbers) this.strength++;
-            
-            // Check special characters
-            this.checks.special = /[^A-Za-z0-9]/.test(password);
-            if (this.checks.special) this.strength++;
-        }
-    }));
-});
-</script>

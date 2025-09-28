@@ -29,6 +29,16 @@ class Profile extends Component
     public $password = '';
     public $password_confirmation = '';
     
+    // Password strength properties
+    public $passwordStrength = 0;
+    public $passwordChecks = [
+        'length' => false,
+        'uppercase' => false,
+        'lowercase' => false,
+        'numbers' => false,
+        'special' => false,
+    ];
+    
     // MFA fields
     public $mfa_enabled = false;
     public $mfa_code = '';
@@ -59,6 +69,101 @@ class Profile extends Component
         $this->branch_name = $user->branch->name ?? 'Not assigned';
         $this->division_name = $user->division->name ?? 'Not assigned';
         $this->section_name = $user->section->name ?? 'Not assigned';
+    }
+
+    public function updatedPassword()
+    {
+        $this->checkPasswordStrength();
+    }
+
+    private function checkPasswordStrength()
+    {
+        $password = $this->password;
+        $this->passwordStrength = 0;
+        
+        // Reset checks
+        $this->passwordChecks = [
+            'length' => false,
+            'uppercase' => false,
+            'lowercase' => false,
+            'numbers' => false,
+            'special' => false,
+        ];
+        
+        if (empty($password)) {
+            return;
+        }
+        
+        // Check length (at least 8 characters)
+        if (strlen($password) >= 8) {
+            $this->passwordChecks['length'] = true;
+            $this->passwordStrength++;
+        }
+        
+        // Check uppercase letters
+        if (preg_match('/[A-Z]/', $password)) {
+            $this->passwordChecks['uppercase'] = true;
+            $this->passwordStrength++;
+        }
+        
+        // Check lowercase letters
+        if (preg_match('/[a-z]/', $password)) {
+            $this->passwordChecks['lowercase'] = true;
+            $this->passwordStrength++;
+        }
+        
+        // Check numbers
+        if (preg_match('/\d/', $password)) {
+            $this->passwordChecks['numbers'] = true;
+            $this->passwordStrength++;
+        }
+        
+        // Check special characters
+        if (preg_match('/[^A-Za-z0-9]/', $password)) {
+            $this->passwordChecks['special'] = true;
+            $this->passwordStrength++;
+        }
+    }
+
+    public function getPasswordStrengthTextProperty()
+    {
+        return match($this->passwordStrength) {
+            0, 1 => 'Very Weak',
+            2 => 'Weak',
+            3 => 'Fair',
+            4 => 'Good',
+            5 => 'Strong',
+            default => 'Very Weak'
+        };
+    }
+
+    public function getPasswordStrengthColorProperty()
+    {
+        return match($this->passwordStrength) {
+            0, 1 => 'text-red-600',
+            2 => 'text-orange-600',
+            3 => 'text-yellow-600',
+            4 => 'text-blue-600',
+            5 => 'text-green-600',
+            default => 'text-red-600'
+        };
+    }
+
+    public function getPasswordStrengthBgProperty()
+    {
+        return match($this->passwordStrength) {
+            0, 1 => 'bg-red-500',
+            2 => 'bg-orange-500',
+            3 => 'bg-yellow-500',
+            4 => 'bg-blue-500',
+            5 => 'bg-green-500',
+            default => 'bg-red-500'
+        };
+    }
+
+    public function getPasswordStrengthPercentageProperty()
+    {
+        return ($this->passwordStrength / 5) * 100;
     }
 
     public function updateProfile()
@@ -185,6 +290,16 @@ class Profile extends Component
         $this->mfa_verification_step = false;
         $this->pending_password_change = false;
         $this->mfa_code = '';
+        
+        // Reset password strength
+        $this->passwordStrength = 0;
+        $this->passwordChecks = [
+            'length' => false,
+            'uppercase' => false,
+            'lowercase' => false,
+            'numbers' => false,
+            'special' => false,
+        ];
     }
 
     public function render()
