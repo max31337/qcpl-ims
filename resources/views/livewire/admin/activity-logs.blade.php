@@ -201,7 +201,7 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <button class="text-sm text-blue-600 hover:text-blue-800" 
-                                            @click="$dispatch('show-activity-details', { log: @js($log) })">
+                                            wire:click="showDetails({{ $log->id }})">
                                         <div class="flex items-center gap-1">
                                             @if(in_array($log->action, ['login', 'logout']) && $log->ip_address)
                                                 <x-ui.icon name="shield-check" size="sm" />
@@ -232,152 +232,167 @@
     </x-ui.card>
 
     <!-- Activity Details Modal -->
-    <div x-data="{ 
-        showModal: false, 
-        activityLog: null 
-    }"
-         @show-activity-details.window="showModal = true; activityLog = $event.detail.log"
-         @keydown.escape.window="showModal = false">
-        
-        <div x-show="showModal" 
-             x-transition.opacity
-             class="fixed inset-0 z-50 overflow-y-auto"
-             style="display: none;">
+    @if($showModal && $selectedLog)
+        <div class="fixed inset-0 z-50 overflow-y-auto" 
+             x-data 
+             @keydown.escape.window="$wire.closeModal()">
             <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" 
-                     @click="showModal = false"></div>
+                     wire:click="closeModal"></div>
 
                 <div class="inline-block w-full max-w-4xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
                     <div class="px-6 py-4 border-b border-gray-200">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2">
-                                <x-ui.icon x-bind:name="activityLog?.action === 'login' || activityLog?.action === 'logout' ? 'shield-check' : 'info'" class="h-5 w-5 text-blue-600" />
-                                <h3 class="text-lg font-semibold text-gray-900" x-text="activityLog?.action === 'login' || activityLog?.action === 'logout' ? 'Security & Activity Details' : 'Activity Details'"></h3>
+                                <x-ui.icon name="info" class="h-5 w-5 text-blue-600" />
+                                <h3 class="text-lg font-semibold text-gray-900">Activity Details</h3>
                             </div>
-                            <button @click="showModal = false"
+                            <button wire:click="closeModal"
                                     class="text-gray-400 hover:text-gray-600">
                                 <x-ui.icon name="x" class="h-5 w-5" />
                             </button>
                         </div>
                     </div>
 
-                    <div class="px-6 py-4 max-h-96 overflow-y-auto" x-show="activityLog">
+                    <div class="px-6 py-4 max-h-96 overflow-y-auto">
                         <div class="space-y-6">
                             <!-- Basic Info (Always shown) -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-900 mb-2">Activity Information</h4>
                                     <div class="space-y-1 text-sm">
-                                        <div><span class="font-medium">Action:</span> <span x-text="activityLog?.action" class="capitalize"></span></div>
-                                        <div><span class="font-medium">Time:</span> <span x-text="activityLog?.created_at"></span></div>
-                                        <div><span class="font-medium">User:</span> <span x-text="activityLog?.user?.name"></span></div>
-                                        <div x-show="activityLog?.model"><span class="font-medium">Model:</span> <span x-text="activityLog?.model"></span> #<span x-text="activityLog?.model_id"></span></div>
+                                        <div><span class="font-medium">Action:</span> <span class="capitalize">{{ $selectedLog->action ?? 'N/A' }}</span></div>
+                                        <div><span class="font-medium">Time:</span> {{ $selectedLog->created_at ? $selectedLog->created_at->format('M d, Y g:i A') : 'N/A' }}</div>
+                                        <div><span class="font-medium">User:</span> {{ $selectedLog->user->name ?? 'N/A' }}</div>
+                                        @if($selectedLog->model)
+                                            <div><span class="font-medium">Model:</span> {{ $selectedLog->model }} #{{ $selectedLog->model_id }}</div>
+                                        @endif
                                     </div>
                                 </div>
                                 <div>
                                     <h4 class="text-sm font-semibold text-gray-900 mb-2">Description</h4>
                                     <div class="text-sm p-3 bg-gray-50 rounded-lg">
-                                        <span x-text="activityLog?.description"></span>
+                                        {{ $selectedLog->description ?? 'No description' }}
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Security Info (Login/Logout only) -->
-                            <div x-show="activityLog?.ip_address" class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <x-ui.icon name="shield-check" size="sm" />
-                                    Security Information
-                                </h4>
-                                <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <h5 class="text-xs font-semibold text-gray-700 mb-2">Network</h5>
-                                        <div class="space-y-1 text-sm">
-                                            <div><span class="font-medium">IP Address:</span> <span x-text="activityLog?.ip_address" class="font-mono"></span></div>
-                                            <div><span class="font-medium">Session:</span> <span x-text="activityLog?.session_id?.substring(0, 16) + '...'" class="font-mono text-xs"></span></div>
+                            @if($selectedLog->ip_address)
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <x-ui.icon name="shield-check" size="sm" />
+                                        Security Information
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <h5 class="text-xs font-semibold text-gray-700 mb-2">Network</h5>
+                                            <div class="space-y-1 text-sm">
+                                                <div><span class="font-medium">IP Address:</span> <span class="font-mono">{{ $selectedLog->ip_address }}</span></div>
+                                                <div><span class="font-medium">Session:</span> <span class="font-mono text-xs">{{ substr($selectedLog->session_id ?? '', 0, 16) }}{{ $selectedLog->session_id ? '...' : '' }}</span></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-xs font-semibold text-gray-700 mb-2">Browser & Device</h5>
+                                            <div class="space-y-1 text-sm">
+                                                <div><span class="font-medium">Browser:</span> {{ $selectedLog->browser }} {{ $selectedLog->browser_version }}</div>
+                                                <div><span class="font-medium">Platform:</span> {{ $selectedLog->platform }}</div>
+                                                <div><span class="font-medium">Device:</span> <span class="capitalize">{{ $selectedLog->device }}</span></div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div>
-                                        <h5 class="text-xs font-semibold text-gray-700 mb-2">Browser & Device</h5>
-                                        <div class="space-y-1 text-sm">
-                                            <div><span class="font-medium">Browser:</span> <span x-text="activityLog?.browser"></span> <span x-text="activityLog?.browser_version"></span></div>
-                                            <div><span class="font-medium">Platform:</span> <span x-text="activityLog?.platform"></span></div>
-                                            <div><span class="font-medium">Device:</span> <span x-text="activityLog?.device" class="capitalize"></span></div>
+                                    
+                                    <!-- Device Type Badges -->
+                                    @if($selectedLog->request_data)
+                                        <div class="mt-3">
+                                            <h5 class="text-xs font-semibold text-gray-700 mb-2">Device Type</h5>
+                                            <div class="flex flex-wrap gap-2">
+                                                @if($selectedLog->request_data['is_mobile'] ?? false)
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        <x-ui.icon name="smartphone" size="xs" class="mr-1" /> Mobile
+                                                    </span>
+                                                @endif
+                                                @if($selectedLog->request_data['is_tablet'] ?? false)
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        <x-ui.icon name="tablet" size="xs" class="mr-1" /> Tablet
+                                                    </span>
+                                                @endif
+                                                @if($selectedLog->request_data['is_desktop'] ?? false)
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                        <x-ui.icon name="monitor" size="xs" class="mr-1" /> Desktop
+                                                    </span>
+                                                @endif
+                                                @if($selectedLog->request_data['is_robot'] ?? false)
+                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                        <x-ui.icon name="bot" size="xs" class="mr-1" /> Bot
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
-                                    </div>
+                                    @endif
                                 </div>
-                                
-                                <!-- Device Type Badges -->
-                                <div class="mt-3">
-                                    <h5 class="text-xs font-semibold text-gray-700 mb-2">Device Type</h5>
-                                    <div class="flex flex-wrap gap-2">
-                                        <span x-show="activityLog?.request_data?.is_mobile" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                            <x-ui.icon name="smartphone" size="xs" class="mr-1" /> Mobile
-                                        </span>
-                                        <span x-show="activityLog?.request_data?.is_tablet" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <x-ui.icon name="tablet" size="xs" class="mr-1" /> Tablet
-                                        </span>
-                                        <span x-show="activityLog?.request_data?.is_desktop" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                            <x-ui.icon name="monitor" size="xs" class="mr-1" /> Desktop
-                                        </span>
-                                        <span x-show="activityLog?.request_data?.is_robot" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <x-ui.icon name="bot" size="xs" class="mr-1" /> Bot
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                            @endif
 
                             <!-- Data Changes (For update activities) -->
-                            <div x-show="activityLog?.old_values && Object.keys(activityLog?.old_values || {}).length > 0" class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <x-ui.icon name="pencil" size="sm" />
-                                    Data Changes
-                                </h4>
-                                <div class="space-y-3">
-                                    <template x-for="[field, value] in Object.entries(activityLog?.old_values || {})" :key="field">
-                                        <div class="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded-lg">
-                                            <div>
-                                                <span class="text-xs font-semibold text-gray-700">Field</span>
-                                                <div class="text-sm font-medium" x-text="field"></div>
+                            @if($selectedLog->old_values && count($selectedLog->old_values) > 0)
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <x-ui.icon name="pencil" size="sm" />
+                                        Data Changes
+                                    </h4>
+                                    <div class="space-y-3">
+                                        @foreach($selectedLog->old_values as $field => $oldValue)
+                                            <div class="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded-lg">
+                                                <div>
+                                                    <span class="text-xs font-semibold text-gray-700">Field</span>
+                                                    <div class="text-sm font-medium">{{ $field }}</div>
+                                                </div>
+                                                <div>
+                                                    <span class="text-xs font-semibold text-red-700">Old Value</span>
+                                                    <div class="text-sm text-red-600">{{ $oldValue ?: '(empty)' }}</div>
+                                                </div>
+                                                <div>
+                                                    <span class="text-xs font-semibold text-green-700">New Value</span>
+                                                    <div class="text-sm text-green-600">{{ $selectedLog->new_values[$field] ?? '(empty)' }}</div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <span class="text-xs font-semibold text-red-700">Old Value</span>
-                                                <div class="text-sm text-red-600" x-text="value || '(empty)'"></div>
-                                            </div>
-                                            <div>
-                                                <span class="text-xs font-semibold text-green-700">New Value</span>
-                                                <div class="text-sm text-green-600" x-text="activityLog?.new_values?.[field] || '(empty)'"></div>
-                                            </div>
-                                        </div>
-                                    </template>
+                                        @endforeach
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
 
                             <!-- Request Details (For security logs) -->
-                            <div x-show="activityLog?.request_data" class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                                    <x-ui.icon name="info" size="sm" />
-                                    Request Information
-                                </h4>
-                                <div class="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
-                                    <div><span class="font-medium">URL:</span> <span x-text="activityLog?.request_data?.url" class="font-mono text-xs break-all"></span></div>
-                                    <div><span class="font-medium">Method:</span> <span x-text="activityLog?.request_data?.method" class="font-mono bg-gray-200 px-1 rounded"></span></div>
-                                    <div x-show="activityLog?.request_data?.referer"><span class="font-medium">Referer:</span> <span x-text="activityLog?.request_data?.referer" class="font-mono text-xs break-all"></span></div>
+                            @if($selectedLog->request_data)
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <x-ui.icon name="info" size="sm" />
+                                        Request Information
+                                    </h4>
+                                    <div class="bg-gray-50 rounded-lg p-3 space-y-2 text-sm">
+                                        <div><span class="font-medium">URL:</span> <span class="font-mono text-xs break-all">{{ $selectedLog->request_data['url'] ?? 'N/A' }}</span></div>
+                                        <div><span class="font-medium">Method:</span> <span class="font-mono bg-gray-200 px-1 rounded">{{ $selectedLog->request_data['method'] ?? 'N/A' }}</span></div>
+                                        @if($selectedLog->request_data['referer'] ?? false)
+                                            <div><span class="font-medium">Referer:</span> <span class="font-mono text-xs break-all">{{ $selectedLog->request_data['referer'] }}</span></div>
+                                        @endif
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
 
                             <!-- User Agent (For security logs) -->
-                            <div x-show="activityLog?.user_agent" class="border-t pt-4">
-                                <h4 class="text-sm font-semibold text-gray-900 mb-3">User Agent</h4>
-                                <div class="bg-gray-50 rounded-lg p-3">
-                                    <code x-text="activityLog?.user_agent" class="text-xs break-all"></code>
+                            @if($selectedLog->user_agent)
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 mb-3">User Agent</h4>
+                                    <div class="bg-gray-50 rounded-lg p-3">
+                                        <code class="text-xs break-all">{{ $selectedLog->user_agent }}</code>
+                                    </div>
                                 </div>
-                            </div>
+                            @endif
                         </div>
                     </div>
 
                     <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
                         <div class="flex justify-end">
-                            <button @click="showModal = false"
+                            <button wire:click="closeModal"
                                     class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                 Close
                             </button>
@@ -386,5 +401,5 @@
                 </div>
             </div>
         </div>
-    </div>
+    @endif
 </div>

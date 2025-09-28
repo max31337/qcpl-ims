@@ -21,6 +21,10 @@ class ActivityLogs extends Component
     public $dateFromFilter = '';
     public $dateToFilter = '';
     public $perPage = 25;
+    
+    // Modal properties
+    public $showModal = false;
+    public $selectedLog = null;
 
     // Available filter options
     public $availableActions = [
@@ -101,6 +105,18 @@ class ActivityLogs extends Component
         ActivityLog::log('export', null, [], [], 'Exported activity logs');
 
         session()->flash('success', 'Activity logs exported successfully.');
+    }
+
+    public function showDetails($logId)
+    {
+        $this->selectedLog = ActivityLog::with('user')->find($logId);
+        $this->showModal = true;
+    }
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->selectedLog = null;
     }
 
     public function render()
