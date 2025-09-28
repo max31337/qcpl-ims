@@ -5,11 +5,13 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Logout;
+use Illuminate\Support\Facades\Mail;
 use App\Models\ActivityLog;
 use App\Models\Asset;
 use App\Models\Supply;
 use App\Models\User;
 use App\Models\AssetTransferHistory;
+use App\Mail\LoginNotificationMail;
 
 class ActivityLogServiceProvider extends ServiceProvider
 {
@@ -37,6 +39,9 @@ class ActivityLogServiceProvider extends ServiceProvider
                 $event->user->id, 
                 true // Include security context
             );
+
+            // Send login notification email (optional feature)
+            $this->sendLoginNotification($event->user);
         });
 
         // Listen for logout events
@@ -56,6 +61,37 @@ class ActivityLogServiceProvider extends ServiceProvider
 
         // Listen for model events
         $this->registerModelEvents();
+    }
+
+    private function sendLoginNotification($user)
+    {
+        try {
+            $agent = new \Jenssegers\Agent\Agent();
+            $loginDetails = [
+                'timestamp' => now()->format('F j, Y \a\t g:i A'),
+                'ip_address' => request()->ip(),
+                'browser' => $agent->browser(),
+                'browser_version' => $agent->version($agent->browser()),
+                'platform' => $agent->platform(),
+                'device' => $agent->deviceType(),
+                'location' => $this->getLocationFromIP(request()->ip()),
+            ];
+
+            Mail::to($user->email)->send(new LoginNotificationMail($user, $loginDetails));
+        } catch (\Exception $e) {
+            // Log the error but don't prevent login
+            \Log::error('Failed to send login notification: ' . $e->getMessage());
+        }
+    }
+
+    private function getLocationFromIP($ip)
+    {
+        // Simple IP location detection - you could enhance this with a service like GeoIP
+        if ($ip === '127.0.0.1' || $ip === '::1') {
+            return 'Local Development';
+        }
+        // For production, you might integrate with a GeoIP service
+        return 'Unknown Location';
     }
 
     /**

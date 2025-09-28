@@ -13,6 +13,7 @@ use App\Models\Section;
 use App\Models\MfaCode;
 use App\Models\ActivityLog;
 use App\Mail\MfaCodeMail;
+use App\Mail\PasswordChangedMail;
 
 #[Layout('layouts.app')]
 class Profile extends Component
@@ -235,6 +236,9 @@ class Profile extends Component
             'password' => Hash::make($this->password),
         ]);
 
+        // Send password changed notification email
+        $this->sendPasswordChangedNotification($user);
+
         // Clear all fields
         $this->resetPasswordFields();
 
@@ -245,16 +249,19 @@ class Profile extends Component
     {
         $user = auth()->user();
         
-        if ($this->mfa_enabled) {
-            // Enabling MFA - send verification code
+        // Check the actual database value, not the Livewire property
+        if (!$user->mfa_enabled) {
+            // Currently disabled, so we're enabling MFA - send verification code
             $mfaCode = $user->generateMfaCode('mfa_setup');
             Mail::to($user->email)->send(new MfaCodeMail($user, $mfaCode, 'mfa_setup'));
             
             $this->mfa_verification_step = true;
+            $this->mfa_enabled = false; // Keep UI state as disabled until verified
             session()->flash('mfa_sent', 'A verification code has been sent to your email to enable MFA.');
         } else {
-            // Disabling MFA
+            // Currently enabled, so we're disabling MFA
             $user->disableMfa();
+            $this->mfa_enabled = false;
             $this->mfa_verification_step = false;
             session()->flash('success', 'Multi-Factor Authentication has been disabled.');
         }
@@ -279,6 +286,37 @@ class Profile extends Component
         $this->mfa_code = '';
 
         session()->flash('success', 'Multi-Factor Authentication has been enabled successfully.');
+    }
+
+    private function sendPasswordChangedNotification($user)
+    {
+        try {
+            $changeDetails = [
+                'timestamp' => now()->format('F j, Y \a\t g:i A'),
+                'ip_address' => request()->ip(),
+                'browser' => $this->getBrowserInfo()['browser'] ?? 'Unknown',
+                'browser_version' => $this->getBrowserInfo()['version'] ?? '',
+                'platform' => $this->getBrowserInfo()['platform'] ?? 'Unknown',
+                'device' => $this->getBrowserInfo()['device'] ?? 'desktop',
+                'changed_by' => $user->name,
+            ];
+
+            Mail::to($user->email)->send(new PasswordChangedMail($user, $changeDetails));
+        } catch (\Exception $e) {
+            // Log the error but don't prevent password change
+            \Log::error('Failed to send password changed notification: ' . $e->getMessage());
+        }
+    }
+
+    private function getBrowserInfo()
+    {
+        $agent = new \Jenssegers\Agent\Agent();
+        return [
+            'browser' => $agent->browser(),
+            'version' => $agent->version($agent->browser()),
+            'platform' => $agent->platform(),
+            'device' => $agent->deviceType(),
+        ];
     }
 
     public function cancelMfaVerification()
