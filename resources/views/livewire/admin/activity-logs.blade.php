@@ -319,6 +319,112 @@
                                 </div>
                             @endif
 
+                            <!-- Asset Transfer Information (For transfer activities) -->
+                            @if($selectedLog->model === 'AssetTransferHistory' && ($selectedLog->old_values || $selectedLog->new_values))
+                                <div class="border-t pt-4">
+                                    <h4 class="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                        <x-ui.icon name="transfer" class="h-3 w-3 text-purple-600" />
+                                        Transfer Information
+                                    </h4>
+                                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                                        <div class="space-y-4">
+                                            <!-- Asset Being Transferred -->
+                                            @if(($selectedLog->new_values['asset_id'] ?? null) || ($selectedLog->old_values['asset_id'] ?? null))
+                                                @php
+                                                    $assetId = $selectedLog->new_values['asset_id'] ?? $selectedLog->old_values['asset_id'];
+                                                    $asset = \App\Models\Asset::find($assetId);
+                                                @endphp
+                                                @if($asset)
+                                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                                        <h5 class="text-sm font-semibold text-blue-900 mb-2">Asset Being Transferred</h5>
+                                                        <div class="grid grid-cols-2 gap-3 text-sm">
+                                                            <div>
+                                                                <span class="font-medium text-blue-800">Property Number:</span>
+                                                                <div class="text-blue-700 font-mono">{{ $asset->property_number }}</div>
+                                                            </div>
+                                                            <div>
+                                                                <span class="font-medium text-blue-800">Description:</span>
+                                                                <div class="text-blue-700">{{ $asset->description }}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endif
+                                            @endif
+
+                                            <!-- Transfer Details -->
+                                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                                @php
+                                                    $originBranch = $selectedLog->new_values['origin_branch_id'] ? \App\Models\Branch::find($selectedLog->new_values['origin_branch_id']) : null;
+                                                    $currentBranch = $selectedLog->new_values['current_branch_id'] ? \App\Models\Branch::find($selectedLog->new_values['current_branch_id']) : null;
+                                                    $originDivision = $selectedLog->new_values['origin_division_id'] ? \App\Models\Division::find($selectedLog->new_values['origin_division_id']) : null;
+                                                    $currentDivision = $selectedLog->new_values['current_division_id'] ? \App\Models\Division::find($selectedLog->new_values['current_division_id']) : null;
+                                                    $originSection = $selectedLog->new_values['origin_section_id'] ? \App\Models\Section::find($selectedLog->new_values['origin_section_id']) : null;
+                                                    $currentSection = $selectedLog->new_values['current_section_id'] ? \App\Models\Section::find($selectedLog->new_values['current_section_id']) : null;
+                                                    $transferredBy = $selectedLog->new_values['transferred_by'] ? \App\Models\User::find($selectedLog->new_values['transferred_by']) : null;
+                                                @endphp
+
+                                                @if($originBranch)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">From Branch:</span>
+                                                        <div class="text-purple-700">{{ $originBranch->name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($currentBranch)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">To Branch:</span>
+                                                        <div class="text-purple-700">{{ $currentBranch->name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($originDivision)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">From Division:</span>
+                                                        <div class="text-purple-700">{{ $originDivision->name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($currentDivision)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">To Division:</span>
+                                                        <div class="text-purple-700">{{ $currentDivision->name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($originSection)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">From Section:</span>
+                                                        <div class="text-purple-700">{{ $originSection->name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($currentSection)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">To Section:</span>
+                                                        <div class="text-purple-700">{{ $currentSection->name }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($selectedLog->new_values['transfer_date'] ?? null)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">Transfer Date:</span>
+                                                        <div class="text-purple-700">{{ \Carbon\Carbon::parse($selectedLog->new_values['transfer_date'])->format('M d, Y g:i A') }}</div>
+                                                    </div>
+                                                @endif
+                                                @if($transferredBy)
+                                                    <div>
+                                                        <span class="font-medium text-purple-800">Transferred By:</span>
+                                                        <div class="text-purple-700">{{ $transferredBy->name }}</div>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <!-- Transfer Remarks -->
+                                            @if($selectedLog->new_values['remarks'] ?? null)
+                                                <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                                    <span class="font-medium text-gray-800">Transfer Remarks:</span>
+                                                    <div class="text-gray-700 mt-1">{{ $selectedLog->new_values['remarks'] }}</div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
+
                             <!-- Security Info (Login/Logout only) -->
                             @if($selectedLog->ip_address)
                                 <div class="border-t pt-4">
