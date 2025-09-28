@@ -349,11 +349,26 @@
                                                 </div>
                                                 <div>
                                                     <span class="text-xs font-semibold text-red-700">Old Value</span>
-                                                    <div class="text-sm text-red-600">{{ $oldValue ?: '(empty)' }}</div>
+                                                    <div class="text-sm text-red-600">
+                                                        @if(is_array($oldValue))
+                                                            <pre class="text-xs bg-red-50 p-2 rounded border overflow-x-auto">{{ json_encode($oldValue, JSON_PRETTY_PRINT) }}</pre>
+                                                        @else
+                                                            {{ $oldValue ?: '(empty)' }}
+                                                        @endif
+                                                    </div>
                                                 </div>
                                                 <div>
                                                     <span class="text-xs font-semibold text-green-700">New Value</span>
-                                                    <div class="text-sm text-green-600">{{ $selectedLog->new_values[$field] ?? '(empty)' }}</div>
+                                                    <div class="text-sm text-green-600">
+                                                        @php
+                                                            $newValue = $selectedLog->new_values[$field] ?? null;
+                                                        @endphp
+                                                        @if(is_array($newValue))
+                                                            <pre class="text-xs bg-green-50 p-2 rounded border overflow-x-auto">{{ json_encode($newValue, JSON_PRETTY_PRINT) }}</pre>
+                                                        @else
+                                                            {{ $newValue ?: '(empty)' }}
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             </div>
                                         @endforeach
