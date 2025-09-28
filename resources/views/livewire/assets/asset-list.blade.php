@@ -144,20 +144,35 @@
                                 >
                     <div class="flex items-start justify-between mb-4">
                         <div class="flex items-center gap-2">
-                                                        <x-ui.badge :variant="($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'active' ? 'success' : (($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'condemn' ? 'warning' : 'danger')">
-                                                                {{ ucfirst($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) }}
-                            </x-ui.badge>
+                            @if($isSingle)
+                                @php
+                                    $statusLetter = match($singleStatus) {
+                                        'active' => 'A',
+                                        'condemn' => 'C',
+                                        'disposed' => 'D',
+                                        default => 'A'
+                                    };
+                                    $statusColor = match($singleStatus) {
+                                        'active' => 'text-green-700 bg-green-100',
+                                        'condemn' => 'text-yellow-700 bg-yellow-100',
+                                        'disposed' => 'text-red-700 bg-red-100',
+                                        default => 'text-green-700 bg-green-100'
+                                    };
+                                @endphp
+                                <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full {{ $statusColor }}">
+                                    {{ $statusLetter }}
+                                </span>
+                            @else
+                                <span class="text-xs font-medium text-muted-foreground">
+                                    <span class="inline-flex items-center justify-center w-6 h-6 mr-1 text-xs font-bold text-green-700 bg-green-100 rounded-full">A</span>{{ $group->active_count ?? 0 }}
+                                    <span class="inline-flex items-center justify-center w-6 h-6 mx-1 text-xs font-bold text-yellow-700 bg-yellow-100 rounded-full">C</span>{{ $group->condemn_count ?? 0 }}
+                                    <span class="inline-flex items-center justify-center w-6 h-6 ml-1 text-xs font-bold text-red-700 bg-red-100 rounded-full">D</span>{{ $group->disposed_count ?? 0 }}
+                                </span>
+                            @endif
                         </div>
-                                                <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">
-                                                    {{ $group->items_count }} {{ $group->items_count === 1 ? 'item' : 'items' }}
-                                                    @if(!$isSingle)
-                                                    <span class="ml-2 text-[11px] text-muted-foreground">
-                                                        <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
-                                                        <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
-                                                        <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
-                                                    </span>
-                                                    @endif
-                                                </span>
+                        <span class="text-xs font-medium bg-muted text-muted-foreground px-2 py-1 rounded">
+                            {{ $group->items_count }} {{ $group->items_count === 1 ? 'item' : 'items' }}
+                        </span>
                     </div>
 
                     @if($group->image_path)
@@ -216,23 +231,47 @@
                         <td class="px-4 py-3 text-sm text-gray-700 truncate max-w-[20ch]">{{ $group->category->name ?? '—' }}</td>
                                                                         <td class="px-4 py-3 text-sm">
                                                                             {{ $group->items_count }}
-                                                                            @if(!$isSingle)
-                                                                                <span class="ml-2 text-xs text-muted-foreground">
+                                                                            <span class="ml-2 text-xs text-muted-foreground">
+                                                                                @if($isSingle)
+                                                                                    @php
+                                                                                        $counts = [
+                                                                                            'active' => $singleStatus === 'active' ? 1 : 0,
+                                                                                            'condemn' => $singleStatus === 'condemn' ? 1 : 0,
+                                                                                            'disposed' => $singleStatus === 'disposed' ? 1 : 0,
+                                                                                        ];
+                                                                                    @endphp
+                                                                                    <span class="text-green-700">A: {{ $counts['active'] }}</span>
+                                                                                    <span class="text-yellow-700">• C: {{ $counts['condemn'] }}</span>
+                                                                                    <span class="text-red-700">• D: {{ $counts['disposed'] }}</span>
+                                                                                @else
                                                                                     <span class="text-green-700">A: {{ $group->active_count ?? 0 }}</span>
                                                                                     <span class="text-yellow-700">• C: {{ $group->condemn_count ?? 0 }}</span>
                                                                                     <span class="text-red-700">• D: {{ $group->disposed_count ?? 0 }}</span>
-                                                                                </span>
-                                                                            @endif
+                                                                                @endif
+                                                                            </span>
                                                                         </td>
                                                 <td class="px-4 py-3 text-xs text-muted-foreground">
-                                                        <span class="px-1.5 py-0.5 rounded"
-                                                                    @class([
-                                                                        'bg-green-100 text-green-800' => ($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'active',
-                                                                        'bg-yellow-100 text-yellow-800' => ($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'condemn',
-                                                                        'bg-red-100 text-red-800' => ($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) === 'disposed',
-                                                                    ])>
-                                                                {{ ucfirst($isSingle ? $singleStatus : ($statusFilter ?: $group->status)) }}
+                                                    @if($isSingle)
+                                                        @php
+                                                            $statusLetter = match($singleStatus) {
+                                                                'active' => 'A',
+                                                                'condemn' => 'C',
+                                                                'disposed' => 'D',
+                                                                default => 'A'
+                                                            };
+                                                            $statusColor = match($singleStatus) {
+                                                                'active' => 'bg-green-100 text-green-800',
+                                                                'condemn' => 'bg-yellow-100 text-yellow-800',
+                                                                'disposed' => 'bg-red-100 text-red-800',
+                                                                default => 'bg-green-100 text-green-800'
+                                                            };
+                                                        @endphp
+                                                        <span class="inline-flex items-center justify-center w-6 h-6 text-xs font-bold rounded-full {{ $statusColor }}">
+                                                            {{ $statusLetter }}
                                                         </span>
+                                                    @else
+                                                        <span class="text-xs">Multiple</span>
+                                                    @endif
                                                 </td>
                         <td class="px-4 py-3 whitespace-nowrap text-right">
                                                         <div class="flex justify-end gap-2">
