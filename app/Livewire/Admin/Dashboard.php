@@ -17,48 +17,36 @@ use Carbon\Carbon;
 #[Layout('layouts.app')]
 class Dashboard extends Component
 {
-    public $from;
-    public $to;
-    public $branchId = null; // optional filter
-
+    // No filters - simple overview only
     public function mount(): void
     {
-        $this->to = now()->toDateString();
-        $this->from = now()->subDays(30)->toDateString();
+        // Dashboard is now filter-free
     }
 
     public function render()
     {
         $user = Auth::user();
-        // Cache key includes filters
-        // Bump cache key version when payload structure changes
-    // v3: adds suppliesMonthlyValues series for bar chart
-    $key = sprintf('admin_dash_v3:%s:%s:%s', $this->from, $this->to, $this->branchId ?? 'all');
+        // Simple cache key - no filters in dashboard
+        $key = 'admin_dash_v4_simple';
         $data = Cache::remember($key, 600, function () use ($user) {
+            // Simple queries without complex scoping for dashboard overview
             $assetsQuery = Asset::query();
             $suppliesQuery = Supply::query();
             $transfers = AssetTransferHistory::query();
-
-            if (!$user->isMainBranch()) {
-                // Non-main admins should be branch-scoped just in case
+            
+            // Basic user scoping - only restrict if not main branch admin
+            if (!($user->isMainBranch() && ($user->isAdmin() || $user->isObserver()))) {
                 $assetsQuery->where('current_branch_id', $user->branch_id);
                 $suppliesQuery->where('branch_id', $user->branch_id);
                 $transfers->where(function ($q) use ($user) {
                     $q->where('origin_branch_id', $user->branch_id)
                       ->orWhere('current_branch_id', $user->branch_id);
                 });
-            } elseif ($this->branchId) {
-                $assetsQuery->where('current_branch_id', $this->branchId);
-                $suppliesQuery->where('branch_id', $this->branchId);
-                $transfers->where(function ($q) {
-                    $q->where('origin_branch_id', $this->branchId)
-                      ->orWhere('current_branch_id', $this->branchId);
-                });
             }
 
             // KPIs
             $totalAssets = (clone $assetsQuery)->count();
-            $assetsValue = (clone $assetsQuery)->sum(DB::raw('COALESCE(total_cost, 0)'));
+            $assetsValue = (clone $assetsQuery)->sum(DB::raw('COALESCE(assets.total_cost, 0)'));
             $supplySkus = (clone $suppliesQuery)->count();
             $lowStock = (clone $suppliesQuery)->whereColumn('current_stock','<','min_stock')->count();
             $suppliesValue = (clone $suppliesQuery)->selectRaw('SUM(current_stock*unit_cost) v')->value('v') ?? 0;
@@ -67,11 +55,11 @@ class Dashboard extends Component
             $driver = DB::connection()->getDriverName();
             // Use appropriate date formatting function per driver
             $monthExpr = match ($driver) {
-                'mysql', 'mariadb' => "DATE_FORMAT(created_at, '%Y-%m')",
-                'pgsql' => "TO_CHAR(created_at, 'YYYY-MM')",
-                'sqlite' => "STRFTIME('%Y-%m', created_at)",
-                'sqlsrv' => "FORMAT(created_at, 'yyyy-MM')",
-                default => "DATE_FORMAT(created_at, '%Y-%m')",
+                'mysql', 'mariadb' => "DATE_FORMAT(assets.created_at, '%Y-%m')",
+                'pgsql' => "TO_CHAR(assets.created_at, 'YYYY-MM')",
+                'sqlite' => "STRFTIME('%Y-%m', assets.created_at)",
+                'sqlsrv' => "FORMAT(assets.created_at, 'yyyy-MM')",
+                default => "DATE_FORMAT(assets.created_at, '%Y-%m')",
             };
             $yearExpr = match ($driver) {
                 'mysql', 'mariadb' => 'YEAR(date_acquired)',
@@ -81,11 +69,12 @@ class Dashboard extends Component
                 default => 'YEAR(date_acquired)',
             };
 
-            $lineEnd = Carbon::parse($this->to)->endOfMonth();
+            // Fixed 12-month window ending now
+            $lineEnd = now()->endOfMonth();
             $lineStart = (clone $lineEnd)->startOfMonth()->subMonths(11);
             $rawMonthly = (clone $assetsQuery)
                 ->selectRaw("$monthExpr as m, COUNT(*) c")
-                ->whereBetween('created_at', [
+                ->whereBetween('assets.created_at', [
                     $lineStart->toDateString() . ' 00:00:00',
                     $lineEnd->toDateString() . ' 23:59:59',
                 ])
@@ -103,9 +92,16 @@ class Dashboard extends Component
             }
 
             // Monthly supplies created (last 12 months) for bar chart
+            $suppliesMonthExpr = match ($driver) {
+                'mysql', 'mariadb' => "DATE_FORMAT(supplies.created_at, '%Y-%m')",
+                'pgsql' => "TO_CHAR(supplies.created_at, 'YYYY-MM')",
+                'sqlite' => "STRFTIME('%Y-%m', supplies.created_at)",
+                'sqlsrv' => "FORMAT(supplies.created_at, 'yyyy-MM')",
+                default => "DATE_FORMAT(supplies.created_at, '%Y-%m')",
+            };
             $rawMonthlySupplies = (clone $suppliesQuery)
-                ->selectRaw("$monthExpr as m, COUNT(*) c")
-                ->whereBetween('created_at', [
+                ->selectRaw("$suppliesMonthExpr as m, COUNT(*) c")
+                ->whereBetween('supplies.created_at', [
                     $lineStart->toDateString() . ' 00:00:00',
                     $lineEnd->toDateString() . ' 23:59:59',
                 ])
@@ -129,7 +125,7 @@ class Dashboard extends Component
             // Assets value by category (top 5)
             $assetsByCategoryValue = (clone $assetsQuery)
                 ->leftJoin('categories', 'assets.category_id', '=', 'categories.id')
-                ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, SUM(COALESCE(total_cost, 0)) as v")
+                ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, SUM(COALESCE(assets.total_cost, 0)) as v")
                 ->groupBy('categories.name')
                 ->orderByDesc('v')
                 ->limit(5)
@@ -173,12 +169,12 @@ class Dashboard extends Component
                 ->limit(5)
                 ->get();
 
-            // Top transfer routes
+            // Recent transfers (last 30 days) - no filters
             $topRoutes = (clone $transfers)
                 ->leftJoin('branches as ob', 'asset_transfer_histories.origin_branch_id', '=', 'ob.id')
                 ->leftJoin('branches as cb', 'asset_transfer_histories.current_branch_id', '=', 'cb.id')
                 ->selectRaw('asset_transfer_histories.origin_branch_id, asset_transfer_histories.current_branch_id, ob.name as origin_name, cb.name as current_name, COUNT(*) c')
-                ->whereBetween('transfer_date', [$this->from, $this->to])
+                ->whereBetween('transfer_date', [now()->subDays(30)->toDateString(), now()->toDateString()])
                 ->groupBy('asset_transfer_histories.origin_branch_id','asset_transfer_histories.current_branch_id','ob.name','cb.name')
                 ->orderByDesc('c')
                 ->limit(5)

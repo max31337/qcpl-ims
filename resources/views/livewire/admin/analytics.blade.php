@@ -7,36 +7,22 @@
   </div>
 
   <x-ui.card class="p-4">
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
       <div>
-        <x-ui.label>From</x-ui.label>
-        <x-ui.input type="date" wire:model.debounce.300ms="from" />
-      </div>
-      <div>
-        <x-ui.label>To</x-ui.label>
-        <x-ui.input type="date" wire:model.debounce.300ms="to" />
-      </div>
-      <div>
-        <x-ui.label>Branch</x-ui.label>
-        <select class="w-full border rounded h-9 px-2" wire:model.debounce.300ms="branchId">
-          <option value="">All</option>
-          @foreach($branches as $b)
-            <option value="{{ $b->id }}">{{ $b->name }}</option>
-          @endforeach
+        <x-ui.label>View Period</x-ui.label>
+        <select class="w-full border rounded h-9 px-2" wire:model.live="period">
+          <option value="alltime">All Time</option>
+          <option value="monthly">Monthly View</option>
+          <option value="yearly">Yearly View</option>
         </select>
       </div>
-      <div>
-        <x-ui.label>Category</x-ui.label>
-        <select class="w-full border rounded h-9 px-2" wire:model.debounce.300ms="categoryId">
-          <option value="">All</option>
-          @foreach($categories as $c)
-            <option value="{{ $c->id }}">{{ $c->name }}</option>
-          @endforeach
+      <div x-show="$wire.period !== 'alltime'">
+        <x-ui.label>Year</x-ui.label>
+        <select class="w-full border rounded h-9 px-2" wire:model.live="selectedYear">
+          @for($year = now()->year; $year >= now()->year - 5; $year--)
+            <option value="{{ $year }}">{{ $year }}</option>
+          @endfor
         </select>
-      </div>
-      <div>
-        <x-ui.label>Top N</x-ui.label>
-        <x-ui.input type="number" min="5" max="20" step="1" wire:model.debounce.300ms="topN" />
       </div>
     </div>
   </x-ui.card>
