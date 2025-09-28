@@ -26,6 +26,10 @@ Route::middleware('guest')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    // MFA Challenge Route
+    Route::get('mfa/challenge', \App\Livewire\MfaChallenge::class)
+        ->name('mfa.challenge');
+        
     Volt::route('verify-email', 'pages.auth.verify-email')
         ->name('verification.notice');
 
