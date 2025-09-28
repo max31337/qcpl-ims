@@ -34,6 +34,12 @@
     'pencil' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z"/>',
     'arrow-left' => '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
   'bar-chart' => '<path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5" rx="1"/><rect x="12" y="9" width="3" height="9" rx="1"/><rect x="17" y="5" width="3" height="13" rx="1"/>' ,
+      'line-chart' => '<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+      'pie-chart' => '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+      'building' => '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/>',
+      'packages' => '<path d="m7.5 4.27 4.5 1.89 4.5-1.89M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/>',
+      'arrow-right' => '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+      'layout' => '<rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/>',
       // Additional for dashboard
       'activity' => '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
   ];

@@ -4,6 +4,7 @@
       <h1 class="text-3xl font-bold tracking-tight">Admin Analytics</h1>
       <p class="text-muted-foreground">Deep dives into assets, supplies, and transfers</p>
     </div>
+    <x-ui.icon name="line-chart" class="h-8 w-8 text-muted-foreground" />
   </div>
 
   <x-ui.card class="p-4">
@@ -38,11 +39,17 @@
 
   {{-- Time series trio --}}
   <x-ui.card class="p-4">
-    <h2 class="text-lg font-semibold mb-4">Monthly activity (last 12 months)</h2>
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold">Monthly activity (last 12 months)</h2>
+      <x-ui.icon name="activity" />
+    </div>
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
       {{-- Assets line --}}
       <div>
-        <h3 class="font-medium mb-2">Assets created</h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-medium">Assets created</h3>
+          <x-ui.icon name="line-chart" />
+        </div>
         @php
           $vals = $assetsMonthly ?? []; $labels = $labels ?? []; $maxV = max($vals ?: [1]);
           $w=560;$h=180;$pl=30;$pr=10;$pt=10;$pb=24; $iW=$w-$pl-$pr;$iH=$h-$pt-$pb;
@@ -61,7 +68,10 @@
 
       {{-- Supplies bars --}}
       <div>
-        <h3 class="font-medium mb-2">Supplies added</h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-medium">Supplies added</h3>
+          <x-ui.icon name="bar-chart" />
+        </div>
         @php
           $sVals=$suppliesMonthly ?? []; $sLabels=$labels ?? []; $sMax=max($sVals ?: [1]);
           $bw=560;$bh=180;$pl=30;$pr=10;$pt=10;$pb=24;$iW=$bw-$pl-$pr;$iH=$bh-$pt-$pb;$count=max(count($sVals),1);$step=$iW/$count;$barW=max($step*0.6,4);
@@ -79,7 +89,10 @@
 
       {{-- Transfers bars --}}
       <div>
-        <h3 class="font-medium mb-2">Transfers</h3>
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="font-medium">Transfers</h3>
+          <x-ui.icon name="bar-chart" />
+        </div>
         @php
           $tVals=$transfersMonthly ?? []; $tLabels=$labels ?? []; $tMax=max($tVals ?: [1]);
           $bw=560;$bh=180;$pl=30;$pr=10;$pt=10;$pb=24;$iW=$bw-$pl-$pr;$iH=$bh-$pt-$pb;$count=max(count($tVals),1);$step=$iW/$count;$barW=max($step*0.6,4);
@@ -100,7 +113,10 @@
   {{-- Distributions & rankings --}}
   <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <x-ui.card class="p-4">
-      <h3 class="font-medium mb-2">Assets by status</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Assets by status</h3>
+        <x-ui.icon name="info" />
+      </div>
       @php
         $map=['active'=>'#16a34a','condemn'=>'#f59e0b','disposed'=>'#ef4444'];
         $sum=max(array_sum($assetsByStatus?->toArray() ?? []),1); $acc=0; $segments=[];
@@ -118,7 +134,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4">
-      <h3 class="font-medium mb-2">Stock health</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Stock health</h3>
+        <x-ui.icon name="packages" />
+      </div>
       @php
         $total=max(($stockOut??0)+($stockLow??0)+($stockOk??0),1);
         $pOut=($stockOut??0)/$total*100; $pLow=($stockLow??0)/$total*100; $pOk=($stockOk??0)/$total*100;
@@ -136,7 +155,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4">
-      <h3 class="font-medium mb-2">Top branches by asset count</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Top branches by asset count</h3>
+        <x-ui.icon name="building" />
+      </div>
       <x-ui.table>
         <thead><tr><th class="px-3 py-2">Branch</th><th class="px-3 py-2 w-48">Bar</th><th class="px-3 py-2 w-20 text-right">Count</th></tr></thead>
         <tbody>
@@ -155,7 +177,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4">
-      <h3 class="font-medium mb-2">Top branches by asset value</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Top branches by asset value</h3>
+        <x-ui.icon name="building" />
+      </div>
       <x-ui.table>
         <thead><tr><th class="px-3 py-2">Branch</th><th class="px-3 py-2 w-48">Bar</th><th class="px-3 py-2 w-24 text-right">Value</th></tr></thead>
         <tbody>
@@ -174,7 +199,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4">
-      <h3 class="font-medium mb-2">Assets by category (pie)</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Assets by category (pie)</h3>
+        <x-ui.icon name="pie-chart" />
+      </div>
       @php
         $vals=$assetsValueByCategory?->pluck('v')->all() ?? []; $names=$assetsValueByCategory?->pluck('name')->all() ?? [];
         $sum=array_sum($vals); $acc=0; $segs=[]; $palette=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
@@ -193,7 +221,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4">
-      <h3 class="font-medium mb-2">Supplies by category (pie)</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Supplies by category (pie)</h3>
+        <x-ui.icon name="pie-chart" />
+      </div>
       @php
         $sVals=$suppliesValueByCategory?->pluck('v')->all() ?? []; $sNames=$suppliesValueByCategory?->pluck('name')->all() ?? [];
         $sSum=array_sum($sVals); $sAcc=0; $sSegs=[]; $sPalette=['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
@@ -212,7 +243,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4 xl:col-span-2">
-      <h3 class="font-medium mb-2">Asset value by category</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Asset value by category</h3>
+        <x-ui.icon name="bar-chart" />
+      </div>
       <x-ui.table>
         <thead><tr><th class="px-3 py-2">Category</th><th class="px-3 py-2 w-48">Bar</th><th class="px-3 py-2 w-24 text-right">Value</th></tr></thead>
         <tbody>
@@ -231,7 +265,10 @@
     </x-ui.card>
 
     <x-ui.card class="p-4 xl:col-span-2">
-      <h3 class="font-medium mb-2">Top transfer routes</h3>
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="font-medium">Top transfer routes</h3>
+        <x-ui.icon name="arrow-right" />
+      </div>
       <x-ui.table>
         <thead><tr><th class="px-3 py-2">From → To</th><th class="px-3 py-2 w-20 text-right">Count</th></tr></thead>
         <tbody>
