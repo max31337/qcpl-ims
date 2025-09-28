@@ -251,6 +251,55 @@
                         </button>
                     </div>
                 </div>
+
+                @if($mfa_verification_step && !$pending_password_change && !auth()->user()->mfa_enabled)
+                    <!-- MFA Setup Verification Step -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                        <h3 class="text-lg font-medium text-blue-900 mb-2">
+                            <x-ui.icon name="mail" class="inline w-5 h-5 mr-2" />
+                            Email Verification Required
+                        </h3>
+                        <p class="text-sm text-blue-700 mb-4">
+                            We've sent a 6-digit verification code to <strong>{{ auth()->user()->email }}</strong>. 
+                            Please enter the code below to complete MFA setup.
+                        </p>
+                        
+                        <form wire:submit="verifyMfaSetup" class="space-y-4">
+                            <div>
+                                <label class="text-sm font-medium text-blue-900">Verification Code</label>
+                                <x-ui.input wire:model="mfa_code" 
+                                           type="text" 
+                                           maxlength="6" 
+                                           placeholder="Enter 6-digit code"
+                                           class="mt-1.5 font-mono text-center text-lg tracking-widest" />
+                                @error('mfa_code')
+                                    <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            
+                            <div class="flex items-center gap-3">
+                                <x-ui.button type="submit" class="bg-blue-600 hover:bg-blue-700">
+                                    <x-ui.icon name="shield-check" class="mr-2 h-4 w-4" />
+                                    Verify & Enable MFA
+                                </x-ui.button>
+                                
+                                <button type="button" 
+                                        wire:click="cancelMfaSetup"
+                                        class="text-sm text-blue-700 hover:text-blue-800 underline">
+                                    Cancel Setup
+                                </button>
+                            </div>
+                        </form>
+                        
+                        <div class="mt-4 p-3 bg-blue-100 rounded-lg">
+                            <p class="text-sm text-blue-800">
+                                <x-ui.icon name="info" class="inline w-4 h-4 mr-1" />
+                                <strong>Didn't receive the code?</strong> Check your spam/junk folder or 
+                                <button wire:click="toggleMfa" class="underline hover:no-underline">resend the code</button>.
+                            </p>
+                        </div>
+                    </div>
+                @endif
             </x-ui.card>
         </div>
 

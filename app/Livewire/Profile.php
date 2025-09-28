@@ -288,6 +288,14 @@ class Profile extends Component
         session()->flash('success', 'Multi-Factor Authentication has been enabled successfully.');
     }
 
+    public function cancelMfaSetup()
+    {
+        $this->mfa_verification_step = false;
+        $this->mfa_code = '';
+        $this->mfa_enabled = false; // Reset to current state
+        session()->flash('info', 'MFA setup cancelled.');
+    }
+
     private function sendPasswordChangedNotification($user)
     {
         try {
