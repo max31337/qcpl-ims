@@ -39,7 +39,15 @@
                     </div>
                     
                     <div class="py-1">
+                        <a href="{{ route('profile') }}" 
+                           class="flex items-center w-full px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+                           wire:navigate>
+                            <x-ui.icon name="user" class="mr-3 h-4 w-4" />
+                            Profile
+                        </a>
+                        
                         @if (Route::has('logout'))
+                            <div class="border-t border-border my-1"></div>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit" 

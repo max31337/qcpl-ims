@@ -137,6 +137,12 @@
                 'active' => true,
             ];
         }
+    } elseif (request()->routeIs('profile')) {
+        $crumbs[] = [
+            'label' => 'Profile',
+            'route' => '#',
+            'active' => true,
+        ];
     }
 @endphp
 

@@ -6,6 +6,7 @@ use App\Livewire\Admin\UserManagement;
 use App\Livewire\Admin\Dashboard as AdminDashboard;
 use App\Livewire\Admin\Analytics as AdminAnalytics;
 use App\Livewire\Admin\TransferHistories;
+use App\Livewire\Profile;
 
 Route::view('/', 'welcome')->name('welcome');
 
@@ -13,6 +14,11 @@ Route::view('/', 'welcome')->name('welcome');
 Route::get('/dashboard', AdminDashboard::class)
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+// Profile
+Route::get('/profile', Profile::class)
+    ->middleware(['auth', 'verified'])
+    ->name('profile');
 
 // Admin Analytics
 Route::get('/admin/analytics', AdminAnalytics::class)
