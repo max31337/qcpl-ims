@@ -19,7 +19,7 @@
         <div class="grid min-h-screen w-full md:grid-cols:[220px_1fr] lg:grid-cols:[280px_1fr] md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             {{-- Sidebar --}}
             <div class="hidden border-r bg-muted/40 md:block sticky top-0 h-screen overflow-hidden">
-                @includeWhen(View::exists('livewire.admin._sidebar'), 'livewire.admin._sidebar')
+                @includeWhen(View::exists('livewire._sidebar'), 'livewire._sidebar')
             </div>
             
             {{-- Main content area --}}
