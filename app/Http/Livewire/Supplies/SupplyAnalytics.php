@@ -4,6 +4,7 @@ namespace App\Http\Livewire\Supplies;
 
 use Livewire\Component;
 use App\Models\Supply;
+use Illuminate\Support\Facades\DB;
 
 class SupplyAnalytics extends Component
 {
@@ -16,13 +17,16 @@ class SupplyAnalytics extends Component
     public function mount()
     {
         $user = auth()->user();
-        $query = Supply::forUser($user);
+    // Run each metric on a fresh builder to avoid leaking where/order/limit clauses.
+    $this->lowStock = (int) Supply::forUser($user)->whereColumn('current_stock', '<=', 'min_stock')->count();
 
-        $this->lowStock = $query->whereColumn('quantity', '<=', 'reorder_level')->count();
-        $this->outOfStock = $query->where('quantity', '<=', 0)->count();
-        $this->totalSkus = $query->count();
-        $this->onHandValue = number_format($query->sum('unit_cost * quantity'), 2);
-        $this->recent = $query->latest('updated_at')->take(5)->get();
+    $this->outOfStock = (int) Supply::forUser($user)->where('current_stock', '<=', 0)->count();
+
+    $this->totalSkus = (int) Supply::forUser($user)->count();
+
+    $this->onHandValue = number_format((float) (Supply::forUser($user)->select(DB::raw('SUM(unit_cost * current_stock) as value'))->value('value') ?? 0), 2);
+
+    $this->recent = Supply::forUser($user)->latest('updated_at')->take(5)->get();
     }
 
     public function render()
