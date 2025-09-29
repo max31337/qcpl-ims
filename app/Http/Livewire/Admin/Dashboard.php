@@ -90,6 +90,41 @@ class Dashboard extends Component
                 ->limit(6)
                 ->get();
 
+            // Supplies monthly aggregates aligned to the months above
+            $suppliesMonthly = [];
+            $transfersMonthly = [];
+            if (!empty($monthlyAssets) && $monthlyAssets->count()) {
+                $months = $monthlyAssets->pluck('m')->all();
+
+                $suppliesGrouped = (clone $suppliesQuery)
+                    ->selectRaw("$monthExpr as m, COUNT(*) c")
+                    ->whereBetween('created_at', [
+                        $this->from . ' 00:00:00',
+                        $this->to . ' 23:59:59',
+                    ])
+                    ->groupBy('m')
+                    ->orderBy('m')
+                    ->get()
+                    ->pluck('c', 'm')
+                    ->all();
+
+                // For transfers, replace created_at reference with transfer_date
+                $monthExprForTransfer = str_replace('created_at', 'transfer_date', $monthExpr);
+                $transfersGrouped = (clone $transfers)
+                    ->selectRaw("$monthExprForTransfer as m, COUNT(*) c")
+                    ->whereBetween('transfer_date', [$this->from, $this->to])
+                    ->groupBy('m')
+                    ->orderBy('m')
+                    ->get()
+                    ->pluck('c', 'm')
+                    ->all();
+
+                foreach ($months as $m) {
+                    $suppliesMonthly[] = isset($suppliesGrouped[$m]) ? (int) $suppliesGrouped[$m] : 0;
+                    $transfersMonthly[] = isset($transfersGrouped[$m]) ? (int) $transfersGrouped[$m] : 0;
+                }
+            }
+
             // Assets by status (for donut chart)
             $assetsByStatus = (clone $assetsQuery)
                 ->selectRaw('status, COUNT(*) c')
@@ -166,6 +201,8 @@ class Dashboard extends Component
                 'lowStock',
                 'suppliesValue',
                 'monthlyAssets',
+                'suppliesMonthly',
+                'transfersMonthly',
                 'assetsByStatus',
                 'assetsByCategoryValue',
                 'assetsByBranch',
@@ -179,7 +216,61 @@ class Dashboard extends Component
             );
         });
 
-        return view('livewire.admin.dashboard', $data);
+        // Prepare simple arrays and labels expected by blade views (backwards-compatible)
+        $labels = [];
+        $assetsMonthly = [];
+        $monthlyLineLabels = [];
+        $monthlyLineValues = [];
+        if (!empty($data['monthlyAssets'])) {
+            // monthlyAssets contains objects with m and c where m is YYYY-MM
+            $labels = $data['monthlyAssets']->pluck('m')->all();
+            $assetsMonthly = $data['monthlyAssets']->pluck('c')->all();
+            $monthlyLineLabels = $labels;
+            $monthlyLineValues = $assetsMonthly;
+        }
+
+        // Use the monthly aggregates returned from the cached payload (computed inside closure)
+        $suppliesMonthly = $data['suppliesMonthly'] ?? [];
+        $transfersMonthly = $data['transfersMonthly'] ?? [];
+
+        // Assets count and value by branch for analytics blades expecting different variable names
+        $assetsCountByBranch = $data['assetsByBranch'] ?? collect();
+        $assetsValueByBranch = $data['assetsByBranch'] ?? collect();
+
+        // Alias category/value lists to names used in analytics view
+        $assetsValueByCategory = $data['assetsByCategoryValue'] ?? collect();
+        $suppliesValueByCategory = $data['topSupplyCategories'] ?? collect();
+
+    // Merge prepared values into view data
+        $viewData = array_merge($data, [
+            'labels' => $labels,
+            'assetsMonthly' => $assetsMonthly,
+            'monthlyLineLabels' => $monthlyLineLabels,
+            'monthlyLineValues' => $monthlyLineValues,
+            'suppliesMonthly' => $suppliesMonthly,
+            'transfersMonthly' => $transfersMonthly,
+            'assetsCountByBranch' => $assetsCountByBranch,
+            'assetsValueByBranch' => $assetsValueByBranch,
+            'assetsValueByCategory' => $assetsValueByCategory,
+            'suppliesValueByCategory' => $suppliesValueByCategory,
+        ]);
+
+        // Dispatch a lightweight browser event so the frontend can initialize or update charts
+        // Convert collections to arrays where appropriate to ensure payload is JSON-serializable
+        $payload = [
+            'labels' => $labels,
+            'assetsValues' => $monthlyLineValues,
+            'suppliesMonthly' => $suppliesMonthly,
+            'transfersMonthly' => $transfersMonthly,
+            'stockOut' => (int) ($data['stockOut'] ?? 0),
+            'stockLow' => (int) ($data['stockLow'] ?? 0),
+            'stockOk' => (int) ($data['stockOk'] ?? 0),
+            'assetsByStatus' => is_object($data['assetsByStatus']) ? $data['assetsByStatus']->toArray() : ($data['assetsByStatus'] ?? []),
+        ];
+
+        $this->dispatchBrowserEvent('dashboard:update', $payload);
+
+        return view('livewire.admin.dashboard', $viewData);
     }
 
     // Branch options for filter UI

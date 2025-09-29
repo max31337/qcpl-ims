@@ -1,4 +1,4 @@
-<div>
+<div class="space-y-6">
     <x-ui-card title="Supplies">
         <div class="flex items-center gap-3 mb-4">
             <x-ui-input wire:model.debounce.300ms="search" placeholder="Search supplies..." />
@@ -43,8 +43,6 @@
             {{ $supplies->links() }}
         </div>
     </x-ui-card>
-</div>
-<div class="space-y-6">
     <div class="flex items-center justify-between">
         <div>
             <h1 class="text-3xl font-bold tracking-tight">Supply Management</h1>

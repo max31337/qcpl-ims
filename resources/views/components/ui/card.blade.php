@@ -3,19 +3,19 @@
     'footer' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'rounded-lg border bg-card text-card-foreground shadow-sm']) }}>
+<div {{ $attributes->merge(['class' => 'rounded-lg border bg-card text-card-foreground shadow-md']) }}>
     @if($header)
-        <div class="flex flex-col space-y-1.5 p-6">
+        <div class="flex flex-col space-y-1.5 p-4">
             {{ $header }}
         </div>
     @endif
     
-    <div class="p-6 pt-0">
+    <div class="p-4 pt-0">
         {{ $slot }}
     </div>
     
     @if($footer)
-        <div class="flex items-center p-6 pt-0">
+        <div class="flex items-center p-4 pt-0">
             {{ $footer }}
         </div>
     @endif
