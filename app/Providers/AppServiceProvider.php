@@ -24,5 +24,8 @@ class AppServiceProvider extends ServiceProvider
     {
         // Register Asset Policy
         Gate::policy(Asset::class, AssetPolicy::class);
+
+        // Register route middleware alias for role checks
+        \Illuminate\Support\Facades\Route::aliasMiddleware('check.role', \App\Http\Middleware\CheckRole::class);
     }
 }

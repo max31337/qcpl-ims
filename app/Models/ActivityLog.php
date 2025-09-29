@@ -56,7 +56,36 @@ class ActivityLog extends Model
         $userId = null,
         bool $includeSecurityContext = false
     ): self {
+        // Resolve a user id to associate with this activity.
+        // Prefer the explicit $userId passed by the caller, otherwise current authenticated user.
+        // If neither is available (e.g. during system actions or user creation),
+        // fall back to a configured system user, an existing admin user, or 1.
         $userId = $userId ?? auth()->id();
+
+        if (empty($userId)) {
+            // 1) Try config value
+            $systemUserId = config('app.activity_system_user');
+            if (!empty($systemUserId)) {
+                $userId = $systemUserId;
+            }
+        }
+
+        if (empty($userId)) {
+            // 2) Try to find any admin user in the system
+            try {
+                $admin = User::where('role', 'admin')->first();
+                if ($admin) {
+                    $userId = $admin->id;
+                }
+            } catch (\Exception $e) {
+                // ignore and fallback to default below
+            }
+        }
+
+        if (empty($userId)) {
+            // 3) Final fallback: use 1 (assumes seed/admin user exists at id 1)
+            $userId = 1;
+        }
         
         $data = [
             'user_id' => $userId,

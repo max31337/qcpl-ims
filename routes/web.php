@@ -11,7 +11,7 @@ use App\Livewire\Profile;
 
 Route::view('/', 'welcome')->name('welcome');
 
-// Admin Dashboard
+// Dashboard (accessible to authenticated users; admin-only areas remain role-guarded)
 Route::get('/dashboard', AdminDashboard::class)
     ->middleware(['auth', 'verified', 'mfa'])
     ->name('dashboard');
@@ -21,28 +21,33 @@ Route::get('/profile', Profile::class)
     ->middleware(['auth', 'verified', 'mfa'])
     ->name('profile');
 
+// Personal activity page for all authenticated users
+Route::get('/activity', \App\Livewire\Activity\MyActivity::class)
+    ->middleware(['auth', 'verified', 'mfa'])
+    ->name('activity.me');
+
 // Admin Analytics
 Route::get('/admin/analytics', AdminAnalytics::class)
-    ->middleware(['auth', 'verified', 'mfa'])
+    ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,observer'])
     ->name('admin.analytics');
 
 // Admin - Transfer Histories
 Route::get('/admin/transfer-histories', \App\Livewire\Admin\TransferHistories::class)
-    ->middleware(['auth', 'verified', 'mfa'])
+    ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,observer'])
     ->name('admin.transfer-histories');
 
 // Admin - User Management (Livewire component)
 Route::get('/admin/invitations', UserManagement::class)
-    ->middleware(['auth', 'verified', 'mfa'])
+    ->middleware(['auth', 'verified', 'mfa', 'check.role:admin'])
     ->name('admin.invitations');
 
 // Admin - Activity Logs
 Route::get('/admin/activity-logs', ActivityLogs::class)
-    ->middleware(['auth', 'verified', 'mfa'])
+    ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,observer'])
     ->name('admin.activity-logs');
 
 // Admin - Assets Reports
-Route::middleware(['auth', 'verified', 'mfa'/*, 'check.role:admin,observer'*/])
+Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer'])
     ->get('/admin/assets/reports', \App\Livewire\Assets\AssetReports::class)
     ->name('admin.assets.reports');
 
@@ -60,7 +65,7 @@ Route::middleware(['auth', 'verified', 'mfa'])->prefix('supplies')->name('suppli
 });
 
 // Assets Management Routes
-Route::middleware(['auth', 'verified', 'mfa'])->prefix('assets')->name('assets.')->group(function () {
+Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer'])->prefix('assets')->name('assets.')->group(function () {
     Route::get('/', \App\Livewire\Assets\AssetList::class)->name('index');
     Route::get('/create', \App\Livewire\Assets\AssetForm::class)->name('form');
     Route::get('/{assetId}/edit', \App\Livewire\Assets\AssetForm::class)->name('edit');

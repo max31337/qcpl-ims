@@ -19,19 +19,23 @@
             Dashboard
         </a>
         
-        <a href="{{ route('admin.analytics') }}"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
-           wire:navigate>
-            <x-ui.icon name="line-chart" />
-            Analytics
-        </a>
+        @if(in_array(auth()->user()->role, ['admin','observer','property_officer']))
+            <a href="{{ route('admin.analytics') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="line-chart" />
+                Analytics
+            </a>
+        @endif
         
-        <a href="{{ route('assets.index') }}"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.*') && !request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
-           wire:navigate>
-            <x-ui.icon name="boxes" />
-            Assets Management
-        </a>
+        @if(in_array(auth()->user()->role, ['admin','property_officer']))
+            <a href="{{ route('assets.index') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.*') && !request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="boxes" />
+                Assets Management
+            </a>
+        @endif
         
         <a href="{{ route('assets.transfer-histories') }}"
            class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ml-3 {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
@@ -47,18 +51,30 @@
                     Supply Management
         </a>
         
-        <a href="{{ route('admin.invitations') }}"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.invitations') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
-           wire:navigate>
-            <x-ui.icon name="users" />
-            User Management
-        </a>
+        @if(auth()->user()->role === 'admin')
+            <a href="{{ route('admin.invitations') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.invitations') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="users" />
+                User Management
+            </a>
+        @endif
         
-        <a href="{{ route('admin.activity-logs') }}"
-           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.activity-logs') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+        @if(in_array(auth()->user()->role, ['admin','observer']))
+            <a href="{{ route('admin.activity-logs') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.activity-logs') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="activity" />
+                Activity Logs
+            </a>
+        @endif
+
+        {{-- Personal activity for all users --}}
+        <a href="{{ route('activity.me') }}"
+           class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('activity.me') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
            wire:navigate>
             <x-ui.icon name="activity" />
-            Activity Logs
+            My Activity
         </a>
     </nav>
 </div>
