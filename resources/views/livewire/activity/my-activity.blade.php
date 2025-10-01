@@ -53,7 +53,7 @@
                 $canOpen = true; $openUrl = route('assets.edit', ['assetId' => $log->model_id]);
             }
         @endphp
-        <x-ui-modal name="{{ 'activity-'.$log->id }}" :show="false" maxWidth="3xl">
+    <x-ui-modal name="{{ 'activity-'.$log->id }}" :show="false" maxWidth="3xl" :forceLight="true">
             <x-slot name="title">
                 <div class="flex items-center gap-3">
                     <x-ui.icon name="{{ $log->action_icon }}" class="h-5 w-5 {{ $log->action_color }}" />
@@ -63,7 +63,7 @@
                     </div>
                 </div>
             </x-slot>
-            <div class="p-6 space-y-4">
+            <div class="p-6 space-y-4 text-gray-800">
                 <div class="flex items-start justify-between gap-4">
                     <div class="text-sm text-gray-800">{{ $log->friendly_description ?? $log->description }}</div>
                     <div class="flex items-center gap-2">
@@ -115,8 +115,8 @@
                                         @foreach($displayChanges as $c)
                                             <tr class="border-t">
                                                 <td class="px-3 py-2 whitespace-nowrap">{{ $c['field_name'] }}</td>
-                                                <td class="px-3 py-2"><span class="inline-block rounded px-2 py-0.5 bg-red-50 text-red-700">{{ $c['old_value'] }}</span></td>
-                                                <td class="px-3 py-2"><span class="inline-block rounded px-2 py-0.5 bg-green-50 text-green-700">{{ $c['new_value'] }}</span></td>
+                                                <td class="px-3 py-2"><span class="inline-block rounded px-2 py-0.5 bg-red-100 text-red-800">{{ $c['old_value'] }}</span></td>
+                                                <td class="px-3 py-2"><span class="inline-block rounded px-2 py-0.5 bg-green-100 text-green-800">{{ $c['new_value'] }}</span></td>
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -125,13 +125,6 @@
                         @else
                             <div class="rounded-md border p-3 text-sm text-gray-500">No field-level changes recorded.</div>
                         @endif
-
-                        <div x-data="{ open: false }" class="mt-3">
-                            <button x-on:click="open = !open" class="text-xs text-gray-500 hover:text-gray-700 underline">Toggle raw JSON</button>
-                            <div x-show="open" x-cloak class="mt-2">
-                                <pre class="text-xs bg-gray-50 p-2 rounded border overflow-x-auto">{{ json_encode($log->getAllChanges(), JSON_PRETTY_PRINT) }}</pre>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
