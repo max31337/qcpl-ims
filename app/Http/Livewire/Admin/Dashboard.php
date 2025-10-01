@@ -23,11 +23,8 @@ class Dashboard extends Component
     public function mount(): void
     {
         $user = Auth::user();
-        // Redirect supply officers to their dashboard
-        if ($user && method_exists($user, 'isSupplyOfficer') && $user->isSupplyOfficer() && !($user->isAdmin() || $user->isObserver())) {
-            $this->redirectRoute('supplies.analytics', navigate: true);
-            return;
-        }
+        // Note: Previously redirected supply officers to supplies.analytics.
+        // Keep them on /dashboard to show the lightweight overview with quick actions.
 
         $this->to = now()->toDateString();
         $this->from = now()->subDays(30)->toDateString();
@@ -185,6 +182,62 @@ class Dashboard extends Component
                     ->limit(5)
                     ->get();
 
+            // Decision support datasets for supply officers
+            // 1) Critical low-stock items (top by reorder value)
+            $lowStockItems = (clone $suppliesQuery)
+                ->whereColumn('current_stock', '<', 'min_stock')
+                ->select(
+                    'id', 'supply_number', 'description', 'current_stock', 'min_stock', 'unit_cost',
+                    DB::raw('(min_stock - current_stock) as deficit'),
+                    DB::raw('(min_stock - current_stock) * unit_cost as reorder_value')
+                )
+                ->orderByDesc(DB::raw('(min_stock - current_stock) * unit_cost'))
+                ->limit(8)
+                ->get();
+
+            // 2) Total reorder value gap for all low-stock SKUs
+            $lowStockValueGap = (clone $suppliesQuery)
+                ->whereColumn('current_stock', '<', 'min_stock')
+                ->selectRaw('SUM( (min_stock - current_stock) * unit_cost ) as gap')
+                ->value('gap') ?? 0;
+
+            // 3) Stale SKUs (no movement in 90+ days), using COALESCE(last_updated, updated_at)
+            $staleThreshold = now()->subDays(90);
+            $staleSkus = (clone $suppliesQuery)
+                ->where('current_stock', '>', 0)
+                ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
+                ->select(
+                    'id', 'supply_number', 'description', 'current_stock', 'unit_cost', 'updated_at', 'last_updated',
+                    DB::raw('(current_stock * unit_cost) as on_hand_value')
+                )
+                ->orderByDesc('on_hand_value')
+                ->limit(8)
+                ->get();
+            $staleSkusCount = (clone $suppliesQuery)
+                ->where('current_stock', '>', 0)
+                ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
+                ->count();
+
+            // 4) Category risk: categories with most low/out-of-stock SKUs
+            $categoryLowCounts = (clone $suppliesQuery)
+                ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
+                ->whereColumn('current_stock', '<', 'min_stock')
+                ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, COUNT(*) as c")
+                ->groupBy('categories.name')
+                ->orderByDesc('c')
+                ->limit(5)
+                ->get();
+
+            // 5) Top on-hand value SKUs
+            $topOnHandSupplies = (clone $suppliesQuery)
+                ->select(
+                    'id', 'supply_number', 'description', 'current_stock', 'unit_cost',
+                    DB::raw('(current_stock * unit_cost) as on_hand_value')
+                )
+                ->orderByDesc('on_hand_value')
+                ->limit(8)
+                ->get();
+
             // Top transfer routes
             $topRoutes = (clone $transfers)
                 ->leftJoin('branches as ob', 'asset_transfer_histories.origin_branch_id', '=', 'ob.id')
@@ -219,7 +272,13 @@ class Dashboard extends Component
                 'stockOk',
                 'topSupplyCategories',
                 'topRoutes',
-                'recentActivity'
+                'recentActivity',
+                'lowStockItems',
+                'lowStockValueGap',
+                'staleSkus',
+                'staleSkusCount',
+                'categoryLowCounts',
+                'topOnHandSupplies'
             );
         });
 

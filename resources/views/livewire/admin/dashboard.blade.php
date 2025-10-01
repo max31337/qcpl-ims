@@ -36,6 +36,109 @@
       <div id="supply-stock-donut" class="mx-auto" style="max-width:260px"></div>
     </x-ui-card>
   </div>
+  
+  {{-- Decision widgets --}}
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
+    <x-ui-card>
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-sm font-medium">Critical Low Stock</h4>
+        <a href="{{ route('supplies.index') }}" class="text-xs text-primary hover:underline">Manage</a>
+      </div>
+      @if(!empty($lowStockItems) && $lowStockItems->count())
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs">
+            <thead>
+              <tr class="text-muted-foreground text-[11px]">
+                <th class="px-2 py-1 text-left">SKU</th>
+                <th class="px-2 py-1 text-right">Stock</th>
+                <th class="px-2 py-1 text-right">Min</th>
+                <th class="px-2 py-1 text-right">Deficit</th>
+                <th class="px-2 py-1 text-right">Reorder ₱</th>
+              </tr>
+            </thead>
+            <tbody>
+            @foreach($lowStockItems as $i)
+              <tr class="border-t">
+                <td class="px-2 py-1">
+                  <div class="font-medium">{{ $i->description }}</div>
+                  <div class="text-[11px] text-muted-foreground">{{ $i->supply_number }}</div>
+                </td>
+                <td class="px-2 py-1 text-right">{{ $i->current_stock }}</td>
+                <td class="px-2 py-1 text-right">{{ $i->min_stock }}</td>
+                <td class="px-2 py-1 text-right text-amber-600">{{ max(0, ($i->min_stock - $i->current_stock)) }}</td>
+                <td class="px-2 py-1 text-right font-semibold">₱{{ number_format(($i->min_stock - $i->current_stock) * (float)$i->unit_cost, 2) }}</td>
+              </tr>
+            @endforeach
+            </tbody>
+          </table>
+        </div>
+        <div class="mt-3 text-xs text-muted-foreground">Total reorder gap: <span class="font-medium text-foreground">₱{{ number_format(($lowStockValueGap ?? 0), 2) }}</span></div>
+      @else
+        <div class="text-sm text-muted-foreground">No low-stock items — you're good!</div>
+      @endif
+    </x-ui-card>
+
+    <x-ui-card>
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-sm font-medium">Stale SKUs (90+ days)</h4>
+        <div class="text-xs text-muted-foreground">{{ number_format($staleSkusCount ?? 0) }} items</div>
+      </div>
+      @if(!empty($staleSkus) && $staleSkus->count())
+        <ul class="divide-y">
+          @foreach($staleSkus as $s)
+            <li class="py-2 text-sm flex items-start justify-between gap-2">
+              <div>
+                <div class="font-medium">{{ $s->description }}</div>
+                <div class="text-xs text-muted-foreground">{{ $s->supply_number }} • Updated {{ optional($s->last_updated ?? $s->updated_at)->diffForHumans() }}</div>
+              </div>
+              <div class="text-right">
+                <div class="text-xs text-muted-foreground">On-hand</div>
+                <div class="font-mono">₱{{ number_format(($s->current_stock * (float)$s->unit_cost), 2) }}</div>
+              </div>
+            </li>
+          @endforeach
+        </ul>
+      @else
+        <div class="text-sm text-muted-foreground">No stale SKUs — great rotation.</div>
+      @endif
+    </x-ui-card>
+
+    <x-ui-card>
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-sm font-medium">Category Risk</h4>
+        <a href="{{ route('supplies.analytics') }}" class="text-xs text-primary hover:underline">View analytics</a>
+      </div>
+      @if(!empty($categoryLowCounts) && $categoryLowCounts->count())
+        <ul class="text-sm divide-y">
+          @foreach($categoryLowCounts as $c)
+            <li class="py-2 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="inline-block h-2 w-2 rounded-full bg-amber-500"></span>
+                <span>{{ $c->name }}</span>
+              </div>
+              <span class="font-mono text-xs">{{ $c->c }} low</span>
+            </li>
+          @endforeach
+        </ul>
+      @else
+        <div class="text-sm text-muted-foreground">No categories at risk.</div>
+      @endif
+
+      @if(!empty($topOnHandSupplies) && $topOnHandSupplies->count())
+        <div class="mt-3">
+          <div class="text-xs text-muted-foreground mb-1">Top On-hand Value</div>
+          <ul class="text-sm space-y-1">
+            @foreach($topOnHandSupplies as $t)
+              <li class="flex items-center justify-between">
+                <span class="truncate">{{ $t->description }}</span>
+                <span class="font-mono">₱{{ number_format(($t->current_stock * (float)$t->unit_cost), 2) }}</span>
+              </li>
+            @endforeach
+          </ul>
+        </div>
+      @endif
+    </x-ui-card>
+  </div>
   <x-ui.card class="p-4 mt-4">
     <div class="text-sm text-gray-600">For full analytics, go to <a href='{{ route('supplies.analytics') }}' class='text-primary hover:underline'>Supply Analytics</a>.</div>
   </x-ui.card>
