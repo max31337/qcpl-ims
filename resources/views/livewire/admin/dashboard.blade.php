@@ -22,9 +22,46 @@
       </div>
     </div>
   </x-ui.card>
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <x-ui-card>
+      <h4 class="text-sm font-medium mb-2">Monthly Additions</h4>
+      <div id="supply-monthly-line"></div>
+    </x-ui-card>
+    <x-ui-card>
+      <h4 class="text-sm font-medium mb-2">Supplies by Category</h4>
+      <div id="supply-categories-bar"></div>
+    </x-ui-card>
+    <x-ui-card>
+      <h4 class="text-sm font-medium mb-2">Stock Health</h4>
+      <div id="supply-stock-donut" class="mx-auto" style="max-width:260px"></div>
+    </x-ui-card>
+  </div>
   <x-ui.card class="p-4 mt-4">
     <div class="text-sm text-gray-600">For full analytics, go to <a href='{{ route('supplies.analytics') }}' class='text-primary hover:underline'>Supply Analytics</a>.</div>
   </x-ui.card>
+  @php
+    $___labels = !empty($monthlyLineLabels ?? $labels ?? []) ? ($monthlyLineLabels ?? $labels) : collect(range(11,0))->map(fn($i)=> now()->subMonths($i)->format('M Y'))->all();
+    $___adds = !empty($suppliesMonthly ?? []) ? $suppliesMonthly : array_fill(0, is_array($___labels) ? count($___labels) : 12, 0);
+    $___cats = ($topSupplyCategories ?? collect())->pluck('name')->values()->all();
+    $___catVals = ($topSupplyCategories ?? collect())->pluck('v')->map(fn($x)=> (float) $x)->values()->all();
+  @endphp
+  <script>
+    // Supply officer overview payload sourced from Admin Dashboard aggregates
+    (function(){
+      try {
+        const payload = {
+          categories: {!! json_encode($___cats) !!},
+          categoryValues: {!! json_encode($___catVals) !!},
+          monthlyLabels: {!! json_encode($___labels) !!},
+          monthlyAdds: {!! json_encode($___adds) !!},
+          stockHealth: { ok: {{ (int)($stockOk ?? 0) }}, low: {{ (int)($stockLow ?? 0) }}, out: {{ (int)($stockOut ?? 0) }} }
+        };
+        // Store for late-loading modules and dispatch event
+        window.__supply_dashboard_payload = payload;
+        window.dispatchEvent(new CustomEvent('supplyDashboard:update', { detail: payload }));
+      } catch(e) { /* no-op */ }
+    })();
+  </script>
 </div>
 @else
 <div class="space-y-6">

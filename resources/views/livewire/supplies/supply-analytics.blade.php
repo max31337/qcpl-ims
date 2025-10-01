@@ -26,10 +26,10 @@
                     <x-ui-card>
                         <div class="flex justify-between items-center">
                             <div>
-                                <div class="font-medium">{{ $s->name }}</div>
-                                <div class="text-sm text-gray-500">SKU: {{ $s->code ?? '—' }}</div>
+                                <div class="font-medium">{{ $s->description }}</div>
+                                <div class="text-sm text-gray-500">Supply #: {{ $s->supply_number ?? '—' }}</div>
                             </div>
-                            <div class="text-sm text-gray-600">{{ $s->quantity }} on hand</div>
+                                <div class="text-sm text-gray-600">{{ $s->current_stock }} on hand</div>
                         </div>
                     </x-ui-card>
                 @empty
@@ -37,5 +37,35 @@
                 @endforelse
             </div>
         </div>
+        
+            <!-- Charts -->
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <x-ui-card>
+                    <h4 class="text-sm font-medium mb-2">Monthly Additions</h4>
+                    <div id="supply-monthly-line"></div>
+                </x-ui-card>
+
+                <x-ui-card>
+                    <h4 class="text-sm font-medium mb-2">Supplies by Category</h4>
+                    <div id="supply-categories-bar"></div>
+                </x-ui-card>
+
+                <x-ui-card>
+                    <h4 class="text-sm font-medium mb-2">Stock Health</h4>
+                    <div id="supply-stock-donut" class="mx-auto" style="max-width:260px"></div>
+                </x-ui-card>
+            </div>
+
+            <script>
+                // Embed initial payload so the chart module can render immediately if it loads after the event
+                window.__supply_analytics_payload = {!! json_encode([
+                    'categories' => array_column($suppliesByCategory ?? [], 'category'),
+                    'categoryCounts' => array_column($suppliesByCategory ?? [], 'count'),
+                    'categoryValues' => array_column($suppliesByCategory ?? [], 'value'),
+                    'monthlyLabels' => $monthlyAdds ? array_map(function($i){ return date('M Y', strtotime(now()->subMonths(11-$i)->format('Y-m-01'))); }, range(0, count($monthlyAdds)-1)) : [],
+                    'monthlyAdds' => $monthlyAdds ?? [],
+                    'stockHealth' => $stockHealth ?? ['ok'=>0,'low'=>0,'out'=>0]
+                ]) !!};
+            </script>
     </x-ui-card>
 </div>

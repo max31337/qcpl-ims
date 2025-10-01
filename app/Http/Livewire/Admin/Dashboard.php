@@ -22,6 +22,13 @@ class Dashboard extends Component
 
     public function mount(): void
     {
+        $user = Auth::user();
+        // Redirect supply officers to their dashboard
+        if ($user && method_exists($user, 'isSupplyOfficer') && $user->isSupplyOfficer() && !($user->isAdmin() || $user->isObserver())) {
+            $this->redirectRoute('supplies.analytics', navigate: true);
+            return;
+        }
+
         $this->to = now()->toDateString();
         $this->from = now()->subDays(30)->toDateString();
     }
