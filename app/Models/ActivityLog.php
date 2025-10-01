@@ -30,6 +30,58 @@ class ActivityLog extends Model
         return $this->belongsTo(User::class);
     }
 
+    // Computed, friendly description for display (does not mutate stored description)
+    public function getFriendlyDescriptionAttribute(): string
+    {
+        $actor = $this->user?->name ?? 'User #' . $this->user_id;
+        $modelName = $this->model ?? 'record';
+        $subject = $this->getRelatedModel();
+
+        // Prefer friendly identifiers when possible
+        $identifier = null;
+        if ($subject) {
+            switch ($this->model) {
+                case 'Supply':
+                    $identifier = $subject->supply_number ?? $subject->id;
+                    break;
+                case 'Asset':
+                    $identifier = $subject->property_number ?? $subject->id;
+                    break;
+                case 'User':
+                    $identifier = $subject->name ?? ($subject->email ?? $subject->id);
+                    break;
+                default:
+                    $identifier = $subject->id ?? 'unknown';
+            }
+        } else {
+            // If subject no longer exists (e.g., deleted), try to use stored values
+            if ($this->model === 'Supply') {
+                $identifier = $this->new_values['supply_number'] ?? $this->old_values['supply_number'] ?? ($this->model_id ? ('#'.$this->model_id) : '');
+            } elseif ($this->model === 'Asset') {
+                $identifier = $this->new_values['property_number'] ?? $this->old_values['property_number'] ?? ($this->model_id ? ('#'.$this->model_id) : '');
+            } elseif ($this->model === 'User') {
+                $identifier = $this->new_values['name'] ?? $this->old_values['name'] ?? ($this->model_id ? ('#'.$this->model_id) : '');
+            } else {
+                $identifier = $this->model_id ? ('#' . $this->model_id) : '';
+            }
+        }
+
+        // Special phrasing: user updated their own account
+        if ($this->model === 'User' && $this->model_id === $this->user_id && $this->action === 'updated') {
+            return $actor . ' updated their account';
+        }
+
+        return match ($this->action) {
+            'created' => "$actor created {$modelName} " . $identifier,
+            'updated' => "$actor updated {$modelName} " . $identifier,
+            'deleted' => "$actor deleted {$modelName} " . $identifier,
+            'transferred' => "$actor transferred {$modelName} " . $identifier,
+            'login' => "$actor logged in",
+            'logout' => "$actor logged out",
+            default => "$actor performed {$this->action} on {$modelName} " . $identifier,
+        };
+    }
+
     // Get the related model instance
     public function getRelatedModel()
     {
@@ -137,15 +189,30 @@ class ActivityLog extends Model
     // Generate automatic description
     private static function generateDescription(string $action, $model, array $oldValues, array $newValues): string
     {
-        $userName = auth()->user()->name ?? 'System';
+        $actor = auth()->user();
+        $userName = $actor->name ?? 'System';
         $modelName = $model ? class_basename($model) : 'record';
-        $modelId = $model ? $model->id : 'unknown';
+
+        // Prefer friendly identifier for known models
+        $identifier = 'unknown';
+        if ($model) {
+            if ($modelName === 'Supply') {
+                $identifier = $model->supply_number ?? $model->id;
+            } elseif ($modelName === 'Asset') {
+                $identifier = $model->property_number ?? $model->id;
+            } elseif ($modelName === 'User') {
+                // For user model, show the user's name rather than just ID
+                $identifier = $model->name ?? $model->id;
+            } else {
+                $identifier = $model->id ?? 'unknown';
+            }
+        }
 
         return match($action) {
-            'created' => "{$userName} created {$modelName} #{$modelId}",
-            'updated' => "{$userName} updated {$modelName} #{$modelId}",
-            'deleted' => "{$userName} deleted {$modelName} #{$modelId}",
-            'transferred' => "{$userName} transferred {$modelName} #{$modelId}",
+            'created' => "{$userName} created {$modelName} {$identifier}",
+            'updated' => "{$userName} updated {$modelName} {$identifier}",
+            'deleted' => "{$userName} deleted {$modelName} {$identifier}",
+            'transferred' => "{$userName} transferred {$modelName} {$identifier}",
             'login' => "{$userName} logged in",
             'logout' => "{$userName} logged out",
             'password_changed' => "{$userName} changed their password",
@@ -154,7 +221,7 @@ class ActivityLog extends Model
             'profile_updated' => "{$userName} updated their profile",
             'export' => "{$userName} exported {$modelName} data",
             'import' => "{$userName} imported {$modelName} data",
-            default => "{$userName} performed {$action} on {$modelName} #{$modelId}",
+            default => "{$userName} performed {$action} on {$modelName} {$identifier}",
         };
     }
 
@@ -240,11 +307,9 @@ class ActivityLog extends Model
             'created_by' => 'Created By',
             
             // Supply fields
-            'code' => 'Supply Code',
-            'stock_quantity' => 'Stock Quantity',
-            'unit_price' => 'Unit Price',
-            'minimum_stock' => 'Minimum Stock',
-            'supplier' => 'Supplier',
+            'supply_number' => 'Supply Number',
+            'current_stock' => 'Current Stock',
+            'min_stock' => 'Minimum Stock',
             
             // User fields
             'name' => 'Name',
