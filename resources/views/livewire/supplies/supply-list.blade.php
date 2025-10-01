@@ -10,10 +10,10 @@
                 <x-ui.icon name="bar-chart" class="h-4 w-4" />
                 <span>Reports</span>
             </a>
-            <button wire:click="$emit('openCreateSupply')" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90">
+            <a href="{{ route('supplies.create') }}" wire:navigate class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90">
                 <x-ui.icon name="plus" class="h-4 w-4" />
                 <span>New Supply</span>
-            </button>
+            </a>
         </div>
     </div>
 
@@ -37,7 +37,7 @@
 
             <div class="flex items-center gap-2">
                 <x-ui-button wire:click="clearFilters" variant="secondary">Clear</x-ui-button>
-                <x-ui-button wire:click="$emit('exportSupplies')">Export</x-ui-button>
+                <a href="{{ route('supplies.reports') }}" wire:navigate class="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-accent">Export</a>
             </div>
         </div>
     </x-ui-card>
@@ -74,12 +74,12 @@
                             </td>
                             <td class="py-3 px-4 text-right">
                                 <div class="inline-flex items-center gap-2">
-                                    <button wire:click="$emit('adjustStock', {{ $s->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent" aria-label="Adjust stock">
+                                    <a href="{{ route('supplies.adjust', ['id' => $s->id]) }}" wire:navigate class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent" aria-label="Adjust stock">
                                         <x-ui.icon name="arrow-up-down" class="h-4 w-4" />
-                                    </button>
-                                    <button wire:click="$emit('editSupply', {{ $s->id }})" class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent" aria-label="Edit">
+                                    </a>
+                                    <a href="{{ route('supplies.edit', ['id' => $s->id]) }}" wire:navigate class="inline-flex items-center justify-center rounded-md h-8 w-8 hover:bg-accent" aria-label="Edit">
                                         <x-ui.icon name="pencil" class="h-4 w-4" />
-                                    </button>
+                                    </a>
                                 </div>
                             </td>
                         </tr>

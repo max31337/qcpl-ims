@@ -1,35 +1,3 @@
-<div>
-    <x-ui-card :title="isset($supply) ? 'Edit Supply' : 'New Supply'">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-                <x-ui-label for="name">Name</x-ui-label>
-                <x-ui-input id="name" wire:model.defer="name" />
-            </div>
-            <div>
-                <x-ui-label for="code">SKU / Code</x-ui-label>
-                <x-ui-input id="code" wire:model.defer="code" />
-            </div>
-            <div>
-                <x-ui-label for="quantity">Quantity</x-ui-label>
-                <x-ui-input id="quantity" type="number" wire:model.defer="quantity" />
-            </div>
-            <div>
-                <x-ui-label for="category_id">Category</x-ui-label>
-                <x-ui-select id="category_id" wire:model.defer="category_id">
-                    <option value="">Select category</option>
-                    @foreach($categories as $c)
-                        <option value="{{ $c->id }}">{{ $c->name }}</option>
-                    @endforeach
-                </x-ui-select>
-            </div>
-        </div>
-
-        <div class="mt-4 flex justify-end space-x-2">
-            <x-ui-button wire:click="save">Save</x-ui-button>
-            <x-ui-button wire:click="$emit('closeSupplyForm')" variant="secondary">Cancel</x-ui-button>
-        </div>
-    </x-ui-card>
-</div>
 <div class="space-y-6">
     <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
