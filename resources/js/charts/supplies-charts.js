@@ -35,6 +35,7 @@ function createDonut(el, labels, series) {
     series: series,
     labels: labels,
     legend: { position: 'bottom' },
+    colors: ['#16a34a', '#f59e0b', '#ef4444'], // OK, Low, Out
     tooltip: { theme: 'dark' }
   };
   charts.donut = new ApexCharts(el, options);
@@ -100,7 +101,13 @@ function renderAll(payload) {
 
   createLine(lineEl, payload.monthlyLabels || [], payload.monthlyAdds || []);
   createBar(barEl, categories, counts ?? values ?? []);
-  createDonut(donutEl, ['OK','Low','Out'], [payload.stockHealth?.ok || 0, payload.stockHealth?.low || 0, payload.stockHealth?.out || 0]);
+  const sh = payload.stockHealth || {
+    ok: (payload.stockOk != null ? payload.stockOk : 0),
+    low: (payload.stockLow != null ? payload.stockLow : 0),
+    out: (payload.stockOut != null ? payload.stockOut : 0),
+  };
+  try { console.debug('[Supply Dashboard] Stock Health', sh); } catch(_) {}
+  createDonut(donutEl, ['OK','Low','Out'], [sh.ok || 0, sh.low || 0, sh.out || 0]);
 
   if (lowOutEl && payload.lowVsOutCategories) {
     createStackedBar(lowOutEl, payload.lowVsOutCategories || [], payload.lowSeries || [], payload.outSeries || []);

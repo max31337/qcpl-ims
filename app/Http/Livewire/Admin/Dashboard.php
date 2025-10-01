@@ -35,15 +35,29 @@ class Dashboard extends Component
         $user = Auth::user();
         // Use scopeForUser for strict isolation and consistent counts
         $baseSupplies = Supply::query()->forUser($user);
-        // Version cache by last supply update so stock health stays fresh
-        $supVer = (clone $baseSupplies)->max('last_updated') ?? (clone $baseSupplies)->max('updated_at') ?? null;
+        // Version cache by the maximum of COALESCE(last_updated, updated_at)
+        $supVer = (clone $baseSupplies)
+            ->selectRaw('MAX(COALESCE(last_updated, updated_at)) as v')
+            ->value('v');
         if ($supVer instanceof \Carbon\CarbonInterface) {
             $supVerStr = $supVer->toDateTimeString();
         } else {
-            $supVerStr = $supVer ? (string)$supVer : '0';
+            $supVerStr = $supVer ? (string) $supVer : '0';
         }
-        // Cache key includes date filters, selected branch (if any), user id, and supplies version
-        $key = sprintf('admin_dash_v3:%s:%s:%s:u%s:s%s', $this->from, $this->to, $this->branchId ?? 'all', $user->id, $supVerStr);
+        // Include current stock health counts in cache key to ensure immediate refresh on changes
+        $outVer = (clone $baseSupplies)
+            ->where(function($q){ $q->where('current_stock','<=',0)->orWhereNull('current_stock'); })
+            ->count();
+        $lowVer = (clone $baseSupplies)
+            ->where('current_stock','>',0)
+            ->whereColumn('current_stock','<','min_stock')
+            ->count();
+        $okVer = (clone $baseSupplies)
+            ->where('current_stock','>',0)
+            ->whereColumn('current_stock','>=','min_stock')
+            ->count();
+        // Cache key includes date filters, selected branch (if any), user id, supplies version, and stock buckets
+        $key = sprintf('admin_dash_v3:%s:%s:%s:u%s:s%s:o%d:l%d:k%d', $this->from, $this->to, $this->branchId ?? 'all', $user->id, $supVerStr, $outVer, $lowVer, $okVer);
 
         // Short TTL to avoid stale discrepancies (1 minute)
         $data = Cache::remember($key, 60, function () use ($user) {
@@ -73,7 +87,11 @@ class Dashboard extends Component
             $totalAssets = (clone $assetsQuery)->count();
             $assetsValue = (clone $assetsQuery)->sum(DB::raw('COALESCE(total_cost, 0)'));
             $supplySkus = (clone $suppliesQuery)->count();
-            $lowStock = (clone $suppliesQuery)->whereColumn('current_stock','<','min_stock')->count();
+            // Low stock KPI should exclude out-of-stock to match donut buckets
+            $lowStock = (clone $suppliesQuery)
+                ->where('current_stock', '>', 0)
+                ->whereColumn('current_stock','<','min_stock')
+                ->count();
             $suppliesValue = (clone $suppliesQuery)->selectRaw('SUM(current_stock*unit_cost) v')->value('v') ?? 0;
 
             // Monthly assets created (last 6 months)
@@ -173,15 +191,15 @@ class Dashboard extends Component
                 ->limit(6)
                 ->get();
 
-            // Supplies stock health buckets
-            $stockOut = (clone $suppliesQuery)->where('current_stock', '<=', 0)->count();
-            $stockLow = (clone $suppliesQuery)
-                ->where('current_stock', '>', 0)
-                ->whereColumn('current_stock', '<', 'min_stock')
-                ->count();
-            $stockOk = (clone $suppliesQuery)
-                ->whereColumn('current_stock', '>=', 'min_stock')
-                ->count();
+            // Supplies stock health buckets in a single pass (matches analytics logic)
+            $stockCounts = (clone $suppliesQuery)
+                ->selectRaw('SUM(CASE WHEN current_stock <= 0 THEN 1 ELSE 0 END) as out_count')
+                ->selectRaw('SUM(CASE WHEN current_stock > 0 AND current_stock < min_stock THEN 1 ELSE 0 END) as low_count')
+                ->selectRaw('SUM(CASE WHEN current_stock > 0 AND current_stock >= min_stock THEN 1 ELSE 0 END) as ok_count')
+                ->first();
+            $stockOut = (int) ($stockCounts->out_count ?? 0);
+            $stockLow = (int) ($stockCounts->low_count ?? 0);
+            $stockOk  = (int) ($stockCounts->ok_count ?? 0);
 
                 // Top supply categories by value (name + v, matching blade)
                 $topSupplyCategories = (clone $suppliesQuery)
@@ -346,6 +364,18 @@ class Dashboard extends Component
         ];
 
         $this->dispatchBrowserEvent('dashboard:update', $payload);
+        // Livewire v3 friendly event for the supply officer charts module
+        $this->dispatch(
+            'supplyDashboard:update',
+            labels: $payload['labels'] ?? [],
+            assetsValues: $payload['assetsValues'] ?? [],
+            suppliesMonthly: $payload['suppliesMonthly'] ?? [],
+            transfersMonthly: $payload['transfersMonthly'] ?? [],
+            stockOut: (int) ($payload['stockOut'] ?? 0),
+            stockLow: (int) ($payload['stockLow'] ?? 0),
+            stockOk: (int) ($payload['stockOk'] ?? 0),
+            assetsByStatus: $payload['assetsByStatus'] ?? []
+        );
 
         return view('livewire.admin.dashboard', $viewData);
     }
