@@ -41,10 +41,56 @@ function createDonut(el, labels, series) {
   charts.donut.render();
 }
 
+function createStackedBar(el, categories, lowSeries, outSeries) {
+  if (charts.stacked) charts.stacked.destroy();
+  const options = {
+    chart: { type: 'bar', height: 260, stacked: true, toolbar: { show: false } },
+    series: [
+      { name: 'Low', data: lowSeries },
+      { name: 'Out', data: outSeries }
+    ],
+    xaxis: { categories },
+    plotOptions: { bar: { borderRadius: 6 } },
+    legend: { position: 'bottom' },
+    colors: ['#f59e0b', '#ef4444']
+  };
+  charts.stacked = new ApexCharts(el, options);
+  charts.stacked.render();
+}
+
+function createHBar(el, labels, values) {
+  if (charts.hbar) charts.hbar.destroy();
+  const options = {
+    chart: { type: 'bar', height: 260, toolbar: { show: false } },
+    series: [{ name: 'Value', data: values }],
+    xaxis: { categories: labels, labels: { formatter: (val) => `₱${Number(val).toLocaleString()}` } },
+    plotOptions: { bar: { horizontal: true, borderRadius: 6 } },
+    dataLabels: { enabled: false },
+    tooltip: { y: { formatter: (val) => `₱${Number(val).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` } }
+  };
+  charts.hbar = new ApexCharts(el, options);
+  charts.hbar.render();
+}
+
+function createPie(el, labels, counts) {
+  if (charts.pie) charts.pie.destroy();
+  const options = {
+    chart: { type: 'pie', height: 240 },
+    series: counts,
+    labels,
+    legend: { position: 'bottom' }
+  };
+  charts.pie = new ApexCharts(el, options);
+  charts.pie.render();
+}
+
 function renderAll(payload) {
   const lineEl = document.getElementById('supply-monthly-line');
   const barEl = document.getElementById('supply-categories-bar');
   const donutEl = document.getElementById('supply-stock-donut');
+  const lowOutEl = document.getElementById('supply-lowout-stacked');
+  const topSkusEl = document.getElementById('supply-topskus-bar');
+  const agingPieEl = document.getElementById('supply-aging-pie');
 
   if (!lineEl || !barEl || !donutEl) return;
 
@@ -55,6 +101,16 @@ function renderAll(payload) {
   createLine(lineEl, payload.monthlyLabels || [], payload.monthlyAdds || []);
   createBar(barEl, categories, counts ?? values ?? []);
   createDonut(donutEl, ['OK','Low','Out'], [payload.stockHealth?.ok || 0, payload.stockHealth?.low || 0, payload.stockHealth?.out || 0]);
+
+  if (lowOutEl && payload.lowVsOutCategories) {
+    createStackedBar(lowOutEl, payload.lowVsOutCategories || [], payload.lowSeries || [], payload.outSeries || []);
+  }
+  if (topSkusEl && payload.topSkuLabels) {
+    createHBar(topSkusEl, payload.topSkuLabels || [], payload.topSkuValues || []);
+  }
+  if (agingPieEl && payload.agingLabels) {
+    createPie(agingPieEl, payload.agingLabels || [], payload.agingCounts || []);
+  }
 }
 
 // Listen for Livewire/browser events

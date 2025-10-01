@@ -56,6 +56,22 @@
                 </x-ui-card>
             </div>
 
+            <!-- Extended analytics charts -->
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <x-ui-card>
+                    <h4 class="text-sm font-medium mb-2">Low vs Out by Category</h4>
+                    <div id="supply-lowout-stacked"></div>
+                </x-ui-card>
+                <x-ui-card>
+                    <h4 class="text-sm font-medium mb-2">Top SKUs by On-hand Value</h4>
+                    <div id="supply-topskus-bar"></div>
+                </x-ui-card>
+                <x-ui-card>
+                    <h4 class="text-sm font-medium mb-2">Stock Aging</h4>
+                    <div id="supply-aging-pie"></div>
+                </x-ui-card>
+            </div>
+
             <script>
                 // Embed initial payload so the chart module can render immediately if it loads after the event
                 window.__supply_analytics_payload = {!! json_encode([
@@ -64,7 +80,15 @@
                     'categoryValues' => array_column($suppliesByCategory ?? [], 'value'),
                     'monthlyLabels' => $monthlyAdds ? array_map(function($i){ return date('M Y', strtotime(now()->subMonths(11-$i)->format('Y-m-01'))); }, range(0, count($monthlyAdds)-1)) : [],
                     'monthlyAdds' => $monthlyAdds ?? [],
-                    'stockHealth' => $stockHealth ?? ['ok'=>0,'low'=>0,'out'=>0]
+                    'stockHealth' => $stockHealth ?? ['ok'=>0,'low'=>0,'out'=>0],
+                    // Extended payload mirrors component dispatch
+                    'lowVsOutCategories' => array_map(fn($r) => $r['category'] ?? ($r['name'] ?? 'Uncategorized'), $lowVsOutByCategory ?? []),
+                    'lowSeries' => array_map(fn($r) => $r['low'] ?? 0, $lowVsOutByCategory ?? []),
+                    'outSeries' => array_map(fn($r) => $r['out'] ?? 0, $lowVsOutByCategory ?? []),
+                    'topSkuLabels' => array_map(fn($r) => $r['label'] ?? ($r['description'] ?? ''), $topOnHandSkus ?? []),
+                    'topSkuValues' => array_map(fn($r) => $r['value'] ?? 0, $topOnHandSkus ?? []),
+                    'agingLabels' => $agingBuckets['labels'] ?? ['≤30d','31-60d','61-90d','>90d'],
+                    'agingCounts' => $agingBuckets['counts'] ?? [0,0,0,0],
                 ]) !!};
             </script>
     </x-ui-card>
