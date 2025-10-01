@@ -26,9 +26,12 @@ class SupplyAnalytics extends Component
     {
         $user = auth()->user();
     // Run each metric on a fresh builder to avoid leaking where/order/limit clauses.
-    $this->lowStock = (int) Supply::forUser($user)->whereColumn('current_stock', '<=', 'min_stock')->count();
-
+    // KPI counters (mutually exclusive buckets)
     $this->outOfStock = (int) Supply::forUser($user)->where('current_stock', '<=', 0)->count();
+    $this->lowStock = (int) Supply::forUser($user)
+        ->where('current_stock', '>', 0)
+        ->whereColumn('current_stock', '<', 'min_stock')
+        ->count();
 
     $this->totalSkus = (int) Supply::forUser($user)->count();
 
@@ -69,9 +72,9 @@ class SupplyAnalytics extends Component
     })->all();
 
     // Stock health: ok / low / out
-    $ok = Supply::forUser($user)->whereColumn('current_stock', '>', 'min_stock')->count();
-    $low = $this->lowStock;
-    $out = $this->outOfStock;
+    $ok = Supply::forUser($user)->whereColumn('current_stock', '>=', 'min_stock')->count();
+    $low = $this->lowStock; // > 0 and < min_stock
+    $out = $this->outOfStock; // <= 0
     $this->stockHealth = [
         'ok' => (int) $ok,
         'low' => (int) $low,

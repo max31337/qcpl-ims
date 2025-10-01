@@ -33,29 +33,40 @@ class Dashboard extends Component
     public function render()
     {
         $user = Auth::user();
-        // Cache key includes filters
-    // Bump cache key version when payload structure changes
-    $key = sprintf('admin_dash_v2:%s:%s:%s', $this->from, $this->to, $this->branchId ?? 'all');
-        $data = Cache::remember($key, 600, function () use ($user) {
-            $assetsQuery = Asset::query();
-            $suppliesQuery = Supply::query();
+        // Use scopeForUser for strict isolation and consistent counts
+        $baseSupplies = Supply::query()->forUser($user);
+        // Version cache by last supply update so stock health stays fresh
+        $supVer = (clone $baseSupplies)->max('last_updated') ?? (clone $baseSupplies)->max('updated_at') ?? null;
+        if ($supVer instanceof \Carbon\CarbonInterface) {
+            $supVerStr = $supVer->toDateTimeString();
+        } else {
+            $supVerStr = $supVer ? (string)$supVer : '0';
+        }
+        // Cache key includes date filters, selected branch (if any), user id, and supplies version
+        $key = sprintf('admin_dash_v3:%s:%s:%s:u%s:s%s', $this->from, $this->to, $this->branchId ?? 'all', $user->id, $supVerStr);
+
+        // Short TTL to avoid stale discrepancies (1 minute)
+        $data = Cache::remember($key, 60, function () use ($user) {
+            $assetsQuery = Asset::query()->forUser($user);
+            $suppliesQuery = Supply::query()->forUser($user);
             $transfers = AssetTransferHistory::query();
 
-            if (!$user->isMainBranch()) {
-                // Non-main admins should be branch-scoped just in case
-                $assetsQuery->where('current_branch_id', $user->branch_id);
-                $suppliesQuery->where('branch_id', $user->branch_id);
-                $transfers->where(function ($q) use ($user) {
-                    $q->where('origin_branch_id', $user->branch_id)
-                      ->orWhere('current_branch_id', $user->branch_id);
-                });
-            } elseif ($this->branchId) {
+            // If admin/observer filtering by branch, apply explicit filter
+            if (($user->isAdmin() || $user->isObserver() || $user->isMainBranch()) && $this->branchId) {
                 $assetsQuery->where('current_branch_id', $this->branchId);
                 $suppliesQuery->where('branch_id', $this->branchId);
                 $transfers->where(function ($q) {
                     $q->where('origin_branch_id', $this->branchId)
                       ->orWhere('current_branch_id', $this->branchId);
                 });
+            } else {
+                // Ensure transfers reflect the same visibility as supplies/assets
+                if (!$user->isAdmin() && !$user->isObserver() && !$user->isMainBranch()) {
+                    $transfers->where(function ($q) use ($user) {
+                        $q->where('origin_branch_id', $user->branch_id)
+                          ->orWhere('current_branch_id', $user->branch_id);
+                    });
+                }
             }
 
             // KPIs
