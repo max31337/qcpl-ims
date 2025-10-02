@@ -12,25 +12,26 @@ function createLineChart(el, labels = [], data = []) {
     chart: { type: 'line', height: '100%', toolbar: { show: false } },
     series: [{ name: 'Assets created', data }],
     xaxis: { categories: labels },
-    stroke: { curve: 'smooth', width: 3 },
-    colors: ['#3b82f6'],
+    stroke: { 
+      curve: 'smooth', 
+      width: 8,
+      colors: ['#646cfaff'],
+      lineCap: 'round'
+    },
+    colors: ['#646cfaff'],
     fill: { 
-      type: 'gradient', 
-      gradient: { 
-        shade: 'light',
-        type: 'vertical',
-        shadeIntensity: 0.5, 
-        gradientToColors: ['#93c5fd'], 
-        opacityFrom: 0.4, 
-        opacityTo: 0.1 
-      } 
+      type: 'solid',
+      opacity: 1,
+      colors: ['#646cfaff']
     },
     markers: { 
-      size: 5, 
-      colors: ['#3b82f6'],
-      strokeWidth: 2, 
+      size: 8, 
+      colors: ['#0095ffff'],
+      strokeWidth: 4, 
       strokeColors: '#ffffff',
-      hover: { size: 7 }
+      hover: { size: 10 },
+      strokeOpacity: 1,
+      fillOpacity: 1
     },
     grid: { strokeDashArray: 4 },
     tooltip: { theme: 'dark' },
