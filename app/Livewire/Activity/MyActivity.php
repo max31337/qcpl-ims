@@ -22,6 +22,31 @@ class MyActivity extends Component
     public $showModal = false;
     public $selectedLog = null;
 
+    // Available filter options
+    public $availableActions = [
+        'created' => 'Created',
+        'updated' => 'Updated', 
+        'deleted' => 'Deleted',
+        'transferred' => 'Transferred',
+        'login' => 'Login',
+        'logout' => 'Logout',
+        'password_changed' => 'Password Changed',
+        'mfa_enabled' => 'MFA Enabled',
+        'mfa_disabled' => 'MFA Disabled',
+        'profile_updated' => 'Profile Updated',
+        'export' => 'Export',
+        'import' => 'Import',
+    ];
+
+    public $availableModels = [
+        'Asset' => 'Assets',
+        'Supply' => 'Supplies',
+        'User' => 'Users',
+        'Branch' => 'Branches',
+        'Category' => 'Categories',
+        'AssetTransferHistory' => 'Asset Transfers',
+    ];
+
     public function mount()
     {
         $this->dateToFilter = now()->format('Y-m-d');
@@ -34,10 +59,26 @@ class MyActivity extends Component
     public function updatingDateFromFilter() { $this->resetPage(); }
     public function updatingDateToFilter() { $this->resetPage(); }
 
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->actionFilter = '';
+        $this->modelFilter = '';
+        $this->dateFromFilter = now()->subDays(30)->format('Y-m-d');
+        $this->dateToFilter = now()->format('Y-m-d');
+        $this->resetPage();
+    }
+
     public function showDetails($id)
     {
-        $this->selectedLog = ActivityLog::find($id);
+        $this->selectedLog = ActivityLog::with('user')->find($id);
         $this->showModal = true;
+    }
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->selectedLog = null;
     }
 
     public function render()
@@ -72,6 +113,8 @@ class MyActivity extends Component
 
         return view('livewire.activity.my-activity', [
             'logs' => $logs,
+            'availableActions' => $this->availableActions,
+            'availableModels' => $this->availableModels,
         ]);
     }
 }

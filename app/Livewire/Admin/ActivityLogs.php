@@ -174,6 +174,8 @@ class ActivityLogs extends Component
             'logs' => $logs,
             'users' => $users,
             'stats' => $stats,
+            'availableActions' => $this->availableActions,
+            'availableModels' => $this->availableModels,
         ]);
     }
 
