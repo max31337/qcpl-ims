@@ -293,6 +293,29 @@ function renderAll(payload) {
     return;
   }
 
+  // Force destroy all existing charts before recreating
+  Object.keys(charts).forEach(key => {
+    if (charts[key] && charts[key].destroy) {
+      try {
+        charts[key].destroy();
+      } catch (e) {
+        console.warn('Error destroying chart:', key, e);
+      }
+    }
+  });
+  charts = {};
+
+  // Check if elements are actually visible in the DOM
+  const isVisible = (el) => {
+    return el && el.offsetParent !== null && el.offsetWidth > 0 && el.offsetHeight > 0;
+  };
+
+  if (!isVisible(lineEl) || !isVisible(barEl) || !isVisible(donutEl)) {
+    console.warn('Chart containers are not visible, retrying in 200ms...');
+    setTimeout(() => renderAll(payload), 200);
+    return;
+  }
+
   const categories = payload.categories || [];
   const counts = (payload.categoryCounts && payload.categoryCounts.length) ? payload.categoryCounts : null;
   const values = (payload.categoryValues && payload.categoryValues.length) ? payload.categoryValues : null;

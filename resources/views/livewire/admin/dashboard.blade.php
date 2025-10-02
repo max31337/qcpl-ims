@@ -127,31 +127,63 @@
 
   {{-- Initialize charts with available data --}}
   <script>
+    function initializeDashboardCharts() {
+      // Check if chart containers exist before initializing
+      const lineChart = document.getElementById('supply-monthly-line');
+      const barChart = document.getElementById('supply-categories-bar');
+      const donutChart = document.getElementById('supply-stock-donut');
+      
+      if (!lineChart || !barChart || !donutChart) {
+        console.log('Chart containers not ready, retrying in 100ms...');
+        setTimeout(initializeDashboardCharts, 100);
+        return;
+      }
+
+      // Manual chart initialization with current data from dashboard
+      const chartData = {
+        categories: @json(($topSupplyCategories ?? collect())->pluck('name')->toArray()),
+        categoryCounts: @json(($topSupplyCategories ?? collect())->pluck('v')->toArray()), // Using values as counts for now
+        categoryValues: @json(($topSupplyCategories ?? collect())->pluck('v')->toArray()),
+        monthlyLabels: @json(collect(range(0, 11))->map(fn($i) => now()->subMonths(11-$i)->format('M Y'))->toArray()),
+        monthlyAdds: @json($suppliesMonthlyValues ?? array_fill(0, 12, 0)),
+        stockHealth: {
+          ok: {{ $stockOk ?? 0 }},
+          low: {{ $stockLow ?? 0 }}, 
+          out: {{ $stockOut ?? 0 }}
+        }
+      };
+
+      console.log('Dashboard chart data:', chartData);
+
+      // Trigger chart rendering
+      window.dispatchEvent(new CustomEvent('supplyAnalytics:update', {
+        detail: chartData
+      }));
+    }
+
+    // Initialize on DOM ready
     document.addEventListener('DOMContentLoaded', function() {
-      // Wait a bit for Livewire components to fully render
-      setTimeout(() => {
-        // Manual chart initialization with current data from dashboard
-        const chartData = {
-          categories: @json(($topSupplyCategories ?? collect())->pluck('name')->toArray()),
-          categoryCounts: @json(($topSupplyCategories ?? collect())->pluck('v')->toArray()), // Using values as counts for now
-          categoryValues: @json(($topSupplyCategories ?? collect())->pluck('v')->toArray()),
-          monthlyLabels: @json(collect(range(0, 11))->map(fn($i) => now()->subMonths(11-$i)->format('M Y'))->toArray()),
-          monthlyAdds: @json($suppliesMonthlyValues ?? array_fill(0, 12, 0)),
-          stockHealth: {
-            ok: {{ $stockOk ?? 0 }},
-            low: {{ $stockLow ?? 0 }}, 
-            out: {{ $stockOut ?? 0 }}
-          }
-        };
-
-        console.log('Dashboard chart data:', chartData);
-
-        // Trigger chart rendering
-        window.dispatchEvent(new CustomEvent('supplyAnalytics:update', {
-          detail: chartData
-        }));
-      }, 1000); // Increased timeout to ensure DOM is ready
+      setTimeout(initializeDashboardCharts, 500);
     });
+
+    // Re-initialize when returning to the page (Livewire navigation)
+    if (window.Livewire) {
+      window.Livewire.on('navigated', function () {
+        setTimeout(initializeDashboardCharts, 500);
+      });
+    }
+
+    // Also initialize when the page becomes visible (browser tab switching)
+    document.addEventListener('visibilitychange', function() {
+      if (!document.hidden) {
+        setTimeout(initializeDashboardCharts, 500);
+      }
+    });
+
+    // Fallback: Initialize immediately if we're already loaded
+    if (document.readyState === 'complete') {
+      setTimeout(initializeDashboardCharts, 100);
+    }
   </script>
   
   {{-- Decision widgets --}}
