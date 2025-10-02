@@ -354,174 +354,161 @@
   <div class="flex items-center justify-between">
     <div>
       <h1 class="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-      <p class="text-sm text-muted-foreground mt-1">Overview of assets, supplies, and activity — quick insights at a glance.</p>
+      <p class="text-muted-foreground">Complete overview of assets, supplies, and system activity across all branches.</p>
     </div>
-    <div class="flex items-center gap-3">
-      <button class="inline-flex items-center gap-2 px-3 py-1 rounded-md border bg-card text-sm text-muted-foreground"><x-ui.icon name="refresh-ccw" class="w-4 h-4"/> Refresh</button>
-      <a href="{{ route('admin.analytics') }}" class="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-primary text-white text-sm">Analytics</a>
+    <div class="flex items-center gap-2">
+      <button class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-accent">
+        <x-ui.icon name="refresh-ccw" class="h-4 w-4" />
+        <span>Refresh</span>
+      </button>
+      <a href="{{ route('admin.analytics') }}" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm hover:bg-primary/90">
+        <x-ui.icon name="bar-chart" class="h-4 w-4" />
+        <span>Analytics</span>
+      </a>
     </div>
   </div>
 
-  {{-- KPI cards --}}
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-    <x-ui-card>
-      <div class="flex items-center justify-between gap-4">
+  {{-- Enhanced KPI Cards --}}
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <x-ui.card class="p-6">
+      <div class="flex items-center justify-between">
         <div>
-          <div class="text-sm text-muted-foreground">Total Assets</div>
-          <div class="text-2xl font-semibold tracking-tight">{{ number_format($totalAssets ?? 0) }}</div>
+          <p class="text-sm text-muted-foreground">Total Assets</p>
+          <p class="text-3xl font-bold">{{ number_format($totalAssets ?? 0) }}</p>
+          <p class="text-xs text-muted-foreground mt-1">Active inventory items</p>
         </div>
-        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
-          <x-ui.icon name="package" class="w-5 h-5" />
+        <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+          <x-ui.icon name="package" class="h-6 w-6 text-blue-600" />
         </div>
       </div>
-    </x-ui-card>
+    </x-ui.card>
 
-    <x-ui-card>
-      <div class="flex items-center justify-between gap-4">
+    <x-ui.card class="p-6">
+      <div class="flex items-center justify-between">
         <div>
-          <div class="text-sm text-muted-foreground">Assets Value</div>
-          <div class="text-2xl font-semibold tracking-tight">₱{{ number_format($assetsValue ?? 0, 2) }}</div>
+          <p class="text-sm text-muted-foreground">Assets Value</p>
+          <p class="text-3xl font-bold text-green-600">₱{{ number_format($assetsValue ?? 0, 2) }}</p>
+          <p class="text-xs text-muted-foreground mt-1">Total asset valuation</p>
         </div>
-        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
-          <x-ui.icon name="credit-card" class="w-5 h-5" />
+        <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+          <x-ui.icon name="credit-card" class="h-6 w-6 text-green-600" />
         </div>
       </div>
-    </x-ui-card>
+    </x-ui.card>
 
-    <x-ui-card>
-      <div class="flex items-center justify-between gap-4">
+    <x-ui.card class="p-6">
+      <div class="flex items-center justify-between">
         <div>
-          <div class="text-sm text-muted-foreground">Supply SKUs</div>
-          <div class="text-2xl font-semibold tracking-tight">{{ number_format($supplySkus ?? 0) }}</div>
+          <p class="text-sm text-muted-foreground">Supply SKUs</p>
+          <p class="text-3xl font-bold text-purple-600">{{ number_format($supplySkus ?? 0) }}</p>
+          <p class="text-xs text-muted-foreground mt-1">Unique supply items</p>
         </div>
-        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
-          <x-ui.icon name="box" class="w-5 h-5" />
+        <div class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
+          <x-ui.icon name="box" class="h-6 w-6 text-purple-600" />
         </div>
       </div>
-    </x-ui-card>
+    </x-ui.card>
 
-    <x-ui-card>
-      <div class="flex items-center justify-between gap-4">
+    <x-ui.card class="p-6">
+      <div class="flex items-center justify-between">
         <div>
-          <div class="text-sm text-muted-foreground">Supplies On-hand Value</div>
-          <div class="text-2xl font-semibold tracking-tight">₱{{ number_format($suppliesValue ?? 0, 2) }}</div>
+          <p class="text-sm text-muted-foreground">Supplies Value</p>
+          <p class="text-3xl font-bold text-emerald-600">₱{{ number_format($suppliesValue ?? 0, 2) }}</p>
+          <p class="text-xs text-muted-foreground mt-1">Current stock valuation</p>
         </div>
-        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
-          <x-ui.icon name="dollar-sign" class="w-5 h-5" />
+        <div class="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
+          <x-ui.icon name="dollar-sign" class="h-6 w-6 text-emerald-600" />
         </div>
       </div>
-    </x-ui-card>
+    </x-ui.card>
   </div>
 
-  {{-- Charts & summaries (shadcn-like card layout) --}}
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-    <x-ui-card>
-      <x-slot name="header">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <x-ui.icon name="line-chart" class="w-5 h-5 text-primary" />
-              <div class="text-sm font-medium">Assets Created</div>
-            </div>
-            <div class="text-xs text-muted-foreground">Last 12 months</div>
-          </div>
+  {{-- Enhanced Analytics Charts Section --}}
+  <div class="space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-xl font-semibold">System Analytics</h2>
+      <a href="{{ route('admin.analytics') }}" class="text-sm text-primary hover:underline">View detailed analytics →</a>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <x-ui-card class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-medium">Assets Created</h4>
+          <x-ui.icon name="line-chart" class="h-5 w-5 text-muted-foreground" />
         </div>
-      </x-slot>
-      <div class="flex items-center justify-center h-56 md:h-64">
-        <div id="assetsLineChart" aria-label="Assets created over time" class="w-full h-full"></div>
-      </div>
-    </x-ui-card>
+        <div id="assetsLineChart" style="min-height: 250px;"></div>
+        <p class="text-xs text-muted-foreground mt-2">New assets registered over the last 12 months</p>
+      </x-ui-card>
 
-    <x-ui-card>
-      <x-slot name="header">
-        <div class="flex items-center justify-between">
-          <div>
-            <div class="flex items-center gap-2">
-              <x-ui.icon name="bar-chart" class="w-5 h-5 text-amber-500" />
-              <div class="text-sm font-medium">Supplies Stock Health</div>
-            </div>
-            <div class="text-xs text-muted-foreground">Out / Low / Healthy</div>
-          </div>
+      <x-ui-card class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-medium">Supplies Stock Health</h4>
+          <x-ui.icon name="bar-chart" class="h-5 w-5 text-muted-foreground" />
         </div>
-      </x-slot>
-      <div class="flex items-center justify-center h-56 md:h-64">
-        <div id="suppliesBarChart" aria-label="Supplies stock health" class="w-full h-full"></div>
-      </div>
-    </x-ui-card>
+        <div id="suppliesBarChart" style="min-height: 250px;"></div>
+        <p class="text-xs text-muted-foreground mt-2">Distribution of supply stock levels across the system</p>
+      </x-ui-card>
 
-    <x-ui-card>
-      <x-slot name="header">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <x-ui.icon name="pie-chart" class="w-5 h-5 text-rose-500" />
-            <div class="text-sm font-medium">Assets by Status</div>
-          </div>
-          <div class="flex items-center gap-2">
-            <div class="text-xs text-muted-foreground hidden sm:block">Toggle</div>
-            <div id="assetsByStatusToggles" class="flex items-center gap-1">
-              @foreach(($assetsByStatus ?? []) as $status => $count)
-                <button type="button" data-status="{{ $status }}" aria-pressed="true" class="status-toggle inline-flex items-center gap-2 px-2 py-1 rounded-md border bg-background hover:bg-muted text-xs transition">
-                  <span class="inline-block h-2 w-2 rounded-full" style="background:{{ $status === 'active' ? '#16a34a' : ($status === 'condemn' ? '#f59e0b' : '#ef4444') }}"></span>
-                  <span class="capitalize">{{ $status }}</span>
-                </button>
-              @endforeach
-            </div>
-          </div>
+      <x-ui-card class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h4 class="text-lg font-medium">Assets by Status</h4>
         </div>
-      </x-slot>
-      <div class="flex flex-col items-center justify-center gap-4">
-        <div class="flex items-center justify-center">
-          <!-- Larger donut for better visibility -->
-          <div id="assetsDonutChart" aria-label="Assets by status" class="w-56 h-56"></div>
+        <div id="assetsDonutChart" class="mx-auto" style="max-width:260px; min-height: 200px;"></div>
+        <div id="assetsByStatusToggles" class="grid grid-cols-3 gap-2 text-center">
+          @foreach(($assetsByStatus ?? []) as $status => $count)
+            <button type="button" data-status="{{ $status }}" aria-pressed="true" class="status-toggle p-3 rounded-lg border {{ $status === 'active' ? 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100' : ($status === 'condemn' ? 'bg-amber-50 border-amber-200 hover:bg-amber-100' : 'bg-red-50 border-red-200 hover:bg-red-100') }} transition-colors">
+              <div class="flex items-center justify-center gap-2 mb-1">
+                <span class="inline-block h-3 w-3 rounded-full" style="background:{{ $status === 'active' ? '#16a34a' : ($status === 'condemn' ? '#f59e0b' : '#ef4444') }}"></span>
+                <div class="text-xs text-muted-foreground font-medium">{{ ucfirst($status) }}</div>
+              </div>
+              <div class="text-2xl font-bold {{ $status === 'active' ? 'text-emerald-600' : ($status === 'condemn' ? 'text-amber-600' : 'text-red-600') }}">{{ $count }}</div>
+            </button>
+          @endforeach
         </div>
-        <div class="w-full">
-          <ul class="grid grid-cols-1 gap-2 text-sm">
-            @foreach(($assetsByStatus ?? []) as $status => $count)
-              <li class="flex items-center justify-between px-3 py-1.5 rounded-md border bg-background">
-                <div class="flex items-center gap-2">
-                  <span class="inline-block h-3 w-3 rounded-full" style="background:{{ $status === 'active' ? '#16a34a' : ($status === 'condemn' ? '#f59e0b' : '#ef4444') }}"></span>
-                  <span class="font-medium capitalize">{{ $status }}</span>
-                </div>
-                <div class="font-mono text-xs">{{ $count }}</div>
-              </li>
-            @endforeach
-          </ul>
-        </div>
-      </div>
-    </x-ui-card>
+      </x-ui-card>
+    </div>
   </div>
 
-  {{-- Summary sections --}}
+  {{-- Enhanced Summary Sections --}}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <x-ui-card>
-      <x-slot name="header">
-        <div class="flex items-center gap-2">
-          <x-ui.icon name="bar-chart" class="w-5 h-5 text-emerald-500" />
-          <div class="text-sm font-medium">Supplies Stock Health</div>
-        </div>
-      </x-slot>
-      <div class="grid grid-cols-3 gap-4 text-center mb-4">
-        <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+    <x-ui-card class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-lg font-medium">Supply Stock Overview</h4>
+        <x-ui.icon name="bar-chart" class="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div class="grid grid-cols-3 gap-4 text-center mb-6">
+        <div class="p-4 rounded-lg bg-red-50 border border-red-100">
           <div class="text-sm text-red-600 font-medium">Out of Stock</div>
-          <div class="text-2xl font-bold text-red-700">{{ number_format($stockOut ?? 0) }}</div>
+          <div class="text-3xl font-bold text-red-700">{{ number_format($stockOut ?? 0) }}</div>
+          <div class="text-xs text-red-500 mt-1">Urgent reorder</div>
         </div>
-        <div class="p-3 rounded-lg bg-amber-50 border border-amber-100">
+        <div class="p-4 rounded-lg bg-amber-50 border border-amber-100">
           <div class="text-sm text-amber-600 font-medium">Low Stock</div>
-          <div class="text-2xl font-bold text-amber-700">{{ number_format($stockLow ?? 0) }}</div>
+          <div class="text-3xl font-bold text-amber-700">{{ number_format($stockLow ?? 0) }}</div>
+          <div class="text-xs text-amber-500 mt-1">Monitor closely</div>
         </div>
-        <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+        <div class="p-4 rounded-lg bg-emerald-50 border border-emerald-100">
           <div class="text-sm text-emerald-600 font-medium">Healthy</div>
-          <div class="text-2xl font-bold text-emerald-700">{{ number_format($stockOk ?? 0) }}</div>
+          <div class="text-3xl font-bold text-emerald-700">{{ number_format($stockOk ?? 0) }}</div>
+          <div class="text-xs text-emerald-500 mt-1">Good levels</div>
         </div>
       </div>
       @if(!empty($topSupplyCategories))
         <div class="pt-4 border-t">
-          <div class="text-sm font-medium text-muted-foreground mb-3">Top supply categories by value</div>
-          <ul class="space-y-2">
+          <div class="flex items-center gap-2 mb-3">
+            <x-ui.icon name="tag" class="h-4 w-4 text-muted-foreground" />
+            <span class="text-sm font-medium text-muted-foreground">Top Categories by Value</span>
+          </div>
+          <ul class="space-y-3">
             @foreach($topSupplyCategories as $c)
-              <li class="flex justify-between items-center py-2 px-3 rounded-md bg-muted/30">
-                <span class="font-medium">{{ $c->name }}</span>
-                <span class="font-mono text-sm">₱{{ number_format($c->v ?? 0, 2) }}</span>
+              <li class="flex justify-between items-center py-3 px-4 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+                <div class="flex items-center gap-3">
+                  <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                    <x-ui.icon name="folder" class="h-4 w-4 text-blue-600" />
+                  </div>
+                  <span class="font-medium">{{ $c->name }}</span>
+                </div>
+                <span class="font-mono text-sm bg-white px-2 py-1 rounded border">₱{{ number_format($c->v ?? 0, 2) }}</span>
               </li>
             @endforeach
           </ul>
@@ -529,37 +516,40 @@
       @endif
     </x-ui-card>
 
-    <x-ui-card>
-      <x-slot name="header">
-        <div class="flex items-center gap-2">
-          <x-ui.icon name="activity" class="w-5 h-5 text-blue-500" />
-          <div class="text-sm font-medium">Recent Activity</div>
-        </div>
-      </x-slot>
+    <x-ui-card class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h4 class="text-lg font-medium">Recent Activity</h4>
+        <x-ui.icon name="activity" class="h-5 w-5 text-muted-foreground" />
+      </div>
       @if(!empty($recentActivity) && $recentActivity->count())
-        <div class="space-y-3">
+        <div class="space-y-3 max-h-96 overflow-y-auto">
           @foreach($recentActivity as $a)
-            <div class="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border">
-              <div class="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+            <div class="flex items-start gap-3 p-4 rounded-lg bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-100 hover:shadow-sm transition-shadow">
+              <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                <x-ui.icon name="zap" class="h-4 w-4 text-blue-600" />
+              </div>
               <div class="flex-1 min-w-0">
                 <div class="flex justify-between items-start gap-2">
                   <div class="font-medium truncate">{{ $a->description }}</div>
-                  <div class="text-xs text-muted-foreground flex-shrink-0">{{ $a->created_at->diffForHumans() }}</div>
+                  <div class="text-xs text-muted-foreground flex-shrink-0 bg-white px-2 py-1 rounded border">{{ $a->created_at->diffForHumans() }}</div>
                 </div>
-                <div class="text-xs text-muted-foreground mt-1">
-                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                <div class="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {{ $a->action }}
                   </span>
-                  on {{ $a->model }} #{{ $a->model_id }}
+                  <span>on {{ $a->model }} #{{ $a->model_id }}</span>
                 </div>
               </div>
             </div>
           @endforeach
         </div>
       @else
-        <div class="text-center py-8">
-          <x-ui.icon name="clock" class="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <div class="text-center py-12">
+          <div class="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+            <x-ui.icon name="clock" class="w-8 h-8 text-gray-400" />
+          </div>
           <div class="text-sm text-muted-foreground">No recent activity</div>
+          <div class="text-xs text-muted-foreground mt-1">System activity will appear here</div>
         </div>
       @endif
     </x-ui-card>

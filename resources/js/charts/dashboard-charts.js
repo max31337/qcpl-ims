@@ -25,7 +25,7 @@ function createLineChart(el, labels = [], data = []) {
       colors: ['#646cfaff']
     },
     markers: { 
-      size: 8, 
+      size: 6, 
       colors: ['#0095ffff'],
       strokeWidth: 4, 
       strokeColors: '#ffffff',
