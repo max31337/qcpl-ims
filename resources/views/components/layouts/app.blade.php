@@ -101,7 +101,7 @@
                 @endif
                 
                 {{-- Page content --}}
-                <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 container overflow-y-auto">
+                <main class="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-y-auto">
                     {{ $slot }}
                 </main>
             </div>
