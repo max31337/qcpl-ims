@@ -119,7 +119,7 @@
             </div>
 
             <div class="bg-white px-4 py-3 border-t border-gray-200">
-                {{ $invitationRequests->links() }}
+                {{ $invitationRequests->links('pagination::custom-light') }}
             </div>
         </div>
     </div>
@@ -221,7 +221,7 @@
             </div>
 
             <div class="bg-white px-4 py-3 border-t border-gray-200">
-                {{ $invitations->links() }}
+                {{ $invitations->links('pagination::custom-light') }}
             </div>
         </div>
     </div>
@@ -334,7 +334,7 @@
             </div>
 
             <div class="bg-white px-4 py-3 border-t border-gray-200">
-                {{ $users->links() }}
+                {{ $users->links('pagination::custom-light') }}
             </div>
         </div>
     </div>

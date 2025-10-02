@@ -92,6 +92,6 @@
             </table>
         </div>
 
-        <div class="mt-4">{{ $supplies->links() }}</div>
+        <div class="mt-4">{{ $supplies->links('pagination::custom-light') }}</div>
     </x-ui-card>
 </div>

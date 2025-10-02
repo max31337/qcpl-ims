@@ -132,7 +132,7 @@
 
         @if($logs->hasPages())
             <div class="px-4 py-3 border-t border-border">
-                {{ $logs->links() }}
+                {{ $logs->links('pagination::custom-light') }}
             </div>
         @endif
     </x-ui.card>

@@ -42,8 +42,8 @@ class AppServiceProvider extends ServiceProvider
             Blade::component($viewPath, 'ui-' . $c);
         }
 
-        // Configure pagination to use Tailwind CSS by default
-        Paginator::defaultView('pagination::tailwind');
+        // Configure pagination to use custom light theme by default
+        Paginator::defaultView('pagination::custom-light');
         Paginator::defaultSimpleView('pagination::simple-tailwind');
     }
 }

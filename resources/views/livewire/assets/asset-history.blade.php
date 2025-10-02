@@ -183,7 +183,7 @@
                 <!-- Pagination -->
                 @if($transferHistory->hasPages())
                     <div class="mt-6">
-                        {{ $transferHistory->links() }}
+                        {{ $transferHistory->links('pagination::custom-light') }}
                     </div>
                 @endif
             @else

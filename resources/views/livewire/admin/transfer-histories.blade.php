@@ -249,7 +249,7 @@
     {{-- Pagination --}}
     @if($transfers->hasPages())
       <div class="p-4 border-t">
-        {{ $transfers->links() }}
+        {{ $transfers->links('pagination::custom-light') }}
       </div>
     @endif
   </x-ui.card>

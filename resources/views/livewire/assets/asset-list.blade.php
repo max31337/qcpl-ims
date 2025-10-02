@@ -310,7 +310,7 @@
 
         <!-- Pagination -->
         <div class="mt-6">
-            {{ $groups->links() }}
+            {{ $groups->links('pagination::custom-light') }}
         </div>
     @else
         <x-ui.card class="p-12 text-center">

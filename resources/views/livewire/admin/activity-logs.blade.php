@@ -220,7 +220,7 @@
             </div>
 
             <div class="px-6 py-4 border-t border-border">
-                {{ $logs->links() }}
+                {{ $logs->links('pagination::custom-light') }}
             </div>
         @else
             <div class="p-12 text-center">
