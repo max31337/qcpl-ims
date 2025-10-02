@@ -55,7 +55,7 @@ function createLine(el, labels = [], series = []) {
         style: { fontSize: '12px', colors: '#6b7280' }
       }
     },
-    stroke: { 
+    stroke: {
       curve: 'smooth',
       width: 4,
       colors: ['#3b82f6']

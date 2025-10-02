@@ -161,7 +161,28 @@
         <h4 class="text-sm font-medium">Critical Low Stock</h4>
         <a href="{{ route('supplies.index') }}" class="text-xs text-primary hover:underline">Manage</a>
       </div>
-      @if(!empty($lowStockItems) && $lowStockItems->count())
+
+      @php
+        // Use direct query since Livewire component data isn't working
+        $currentUser = auth()->user();
+        $criticalLowStock = \App\Models\Supply::forUser($currentUser)
+          ->whereColumn('current_stock', '<', 'min_stock')
+          ->select(
+            'id', 'supply_number', 'description', 'current_stock', 'min_stock', 'unit_cost',
+            \DB::raw('(min_stock - current_stock) as deficit'),
+            \DB::raw('(min_stock - current_stock) * unit_cost as reorder_value')
+          )
+          ->orderByDesc(\DB::raw('(min_stock - current_stock) * unit_cost'))
+          ->limit(8)
+          ->get();
+        
+        $totalReorderGap = \App\Models\Supply::forUser($currentUser)
+          ->whereColumn('current_stock', '<', 'min_stock')
+          ->selectRaw('SUM( (min_stock - current_stock) * unit_cost ) as gap')
+          ->value('gap') ?? 0;
+      @endphp
+      
+      @if($criticalLowStock->count() > 0)
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs">
             <thead>
@@ -174,7 +195,7 @@
               </tr>
             </thead>
             <tbody>
-            @foreach($lowStockItems as $i)
+            @foreach($criticalLowStock as $i)
               <tr class="border-t">
                 <td class="px-2 py-1">
                   <div class="font-medium">{{ $i->description }}</div>
@@ -189,7 +210,7 @@
             </tbody>
           </table>
         </div>
-        <div class="mt-3 text-xs text-muted-foreground">Total reorder gap: <span class="font-medium text-foreground">₱{{ number_format(($lowStockValueGap ?? 0), 2) }}</span></div>
+        <div class="mt-3 text-xs text-muted-foreground">Total reorder gap: <span class="font-medium text-foreground">₱{{ number_format($totalReorderGap, 2) }}</span></div>
       @else
         <div class="text-sm text-muted-foreground">No low-stock items — you're good!</div>
       @endif
@@ -200,9 +221,34 @@
         <h4 class="text-sm font-medium">Stale SKUs (90+ days)</h4>
         <div class="text-xs text-muted-foreground">{{ number_format($staleSkusCount ?? 0) }} items</div>
       </div>
-      @if(!empty($staleSkus) && $staleSkus->count())
+      @php
+        // Direct query for stale SKUs (90+ days)
+        $staleThreshold = now()->subDays(90);
+        $staleSkusList = \App\Models\Supply::forUser($currentUser)
+          ->where('current_stock', '>', 0)
+          ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
+          ->select(
+            'id', 'supply_number', 'description', 'current_stock', 'unit_cost', 'updated_at', 'last_updated',
+            \DB::raw('(current_stock * unit_cost) as on_hand_value')
+          )
+          ->orderByDesc('on_hand_value')
+          ->limit(8)
+          ->get();
+        
+        $staleSkusTotal = \App\Models\Supply::forUser($currentUser)
+          ->where('current_stock', '>', 0)
+          ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
+          ->count();
+      @endphp
+      
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="text-sm font-medium">Stale SKUs (90+ days)</h4>
+        <div class="text-xs text-muted-foreground">{{ number_format($staleSkusTotal) }} items</div>
+      </div>
+      
+      @if($staleSkusList->count() > 0)
         <ul class="divide-y">
-          @foreach($staleSkus as $s)
+          @foreach($staleSkusList as $s)
             <li class="py-2 text-sm flex items-start justify-between gap-2">
               <div>
                 <div class="font-medium">{{ $s->description }}</div>
@@ -225,9 +271,21 @@
         <h4 class="text-sm font-medium">Category Risk</h4>
         <a href="{{ route('supplies.analytics') }}" class="text-xs text-primary hover:underline">View analytics</a>
       </div>
-      @if(!empty($categoryLowCounts) && $categoryLowCounts->count())
+      @php
+        // Direct query for category risk
+        $categoryRisk = \App\Models\Supply::forUser($currentUser)
+          ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
+          ->whereColumn('current_stock', '<', 'min_stock')
+          ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, COUNT(*) as c")
+          ->groupBy('categories.name')
+          ->orderByDesc('c')
+          ->limit(5)
+          ->get();
+      @endphp
+      
+      @if($categoryRisk->count() > 0)
         <ul class="text-sm divide-y">
-          @foreach($categoryLowCounts as $c)
+          @foreach($categoryRisk as $c)
             <li class="py-2 flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="inline-block h-2 w-2 rounded-full bg-amber-500"></span>

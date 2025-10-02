@@ -23,6 +23,12 @@ class Dashboard extends Component
     public function mount(): void
     {
         $user = Auth::user();
+        // DEBUG: Test if mount is called
+        if ($user->id == 5) {
+            \Log::info('Dashboard mount() called for user 5');
+            file_put_contents(storage_path('logs/dashboard-debug.txt'), 'Mount called at ' . now() . ' for user ' . $user->id . PHP_EOL, FILE_APPEND);
+        }
+        
         // Note: Previously redirected supply officers to supplies.analytics.
         // Keep them on /dashboard to show the lightweight overview with quick actions.
 
@@ -32,6 +38,7 @@ class Dashboard extends Component
 
     public function render()
     {
+        \Log::info('Dashboard render() called for user: ' . Auth::id());
         $user = Auth::user();
         // Use scopeForUser for strict isolation and consistent counts
         $baseSupplies = Supply::query()->forUser($user);
@@ -57,10 +64,50 @@ class Dashboard extends Component
             ->whereColumn('current_stock','>=','min_stock')
             ->count();
         // Cache key includes date filters, selected branch (if any), user id, supplies version, and stock buckets
-        $key = sprintf('admin_dash_v3:%s:%s:%s:u%s:s%s:o%d:l%d:k%d', $this->from, $this->to, $this->branchId ?? 'all', $user->id, $supVerStr, $outVer, $lowVer, $okVer);
+        $key = sprintf('admin_dash_v6_user_%s_role_%s_branch_%s', $user->id, $user->role, $user->branch_id);
 
-        // Short TTL to avoid stale discrepancies (1 minute)
-        $data = Cache::remember($key, 60, function () use ($user) {
+        // SIMPLE TEST: Create test data directly
+        \Log::info('Creating test data for user: ' . $user->id);
+        
+        // Get some basic data first
+        $suppliesQuery = Supply::query()->forUser($user);
+        $lowStockTest = $suppliesQuery->whereColumn('current_stock', '<', 'min_stock')->get();
+        \Log::info('Direct query test', ['low_stock_count' => $lowStockTest->count()]);
+        
+        // Create simple test data array
+        $data = [
+            'totalAssets' => 100,
+            'assetsValue' => 50000,
+            'supplySkus' => 16,
+            'lowStock' => $lowStockTest->count(),
+            'suppliesValue' => 15000,
+            'lowStockItems' => $lowStockTest,
+            'staleSkus' => collect([]),
+            'categoryLowCounts' => collect([]),
+            'lowStockValueGap' => 5000,
+            'staleSkusCount' => 0,
+            'topOnHandSupplies' => collect([]),
+        ];
+        
+        \Log::info('Test data created', [
+            'data_keys' => array_keys($data),
+            'lowStockItems_count' => $data['lowStockItems']->count()
+        ]);
+        
+        // DEBUG: Temporarily dump data to see what's happening
+        if ($user->id == 5) {
+            dd([
+                'user_id' => $user->id,
+                'data_keys' => array_keys($data),
+                'lowStockItems_count' => $data['lowStockItems']->count(),
+                'first_low_stock' => $data['lowStockItems']->first() ? $data['lowStockItems']->first()->description : 'none'
+            ]);
+        }
+        
+        // Skip the complex cache logic for now
+        /*
+        $data = (function () use ($user) {
+            \Log::info('Dashboard closure executing for user ' . $user->id);
             $assetsQuery = Asset::query()->forUser($user);
             $suppliesQuery = Supply::query()->forUser($user);
             $transfers = AssetTransferHistory::query();
@@ -213,16 +260,22 @@ class Dashboard extends Component
 
             // Decision support datasets for supply officers
             // 1) Critical low-stock items (top by reorder value)
-            $lowStockItems = (clone $suppliesQuery)
-                ->whereColumn('current_stock', '<', 'min_stock')
-                ->select(
-                    'id', 'supply_number', 'description', 'current_stock', 'min_stock', 'unit_cost',
-                    DB::raw('(min_stock - current_stock) as deficit'),
-                    DB::raw('(min_stock - current_stock) * unit_cost as reorder_value')
-                )
-                ->orderByDesc(DB::raw('(min_stock - current_stock) * unit_cost'))
-                ->limit(8)
-                ->get();
+            try {
+                $lowStockItems = (clone $suppliesQuery)
+                    ->whereColumn('current_stock', '<', 'min_stock')
+                    ->select(
+                        'id', 'supply_number', 'description', 'current_stock', 'min_stock', 'unit_cost',
+                        DB::raw('(min_stock - current_stock) as deficit'),
+                        DB::raw('(min_stock - current_stock) * unit_cost as reorder_value')
+                    )
+                    ->orderByDesc(DB::raw('(min_stock - current_stock) * unit_cost'))
+                    ->limit(8)
+                    ->get();
+                \Log::info('lowStockItems query successful', ['count' => $lowStockItems->count()]);
+            } catch (\Exception $e) {
+                \Log::error('lowStockItems query failed', ['error' => $e->getMessage()]);
+                $lowStockItems = collect();
+            }
 
             // 2) Total reorder value gap for all low-stock SKUs
             $lowStockValueGap = (clone $suppliesQuery)
@@ -231,31 +284,44 @@ class Dashboard extends Component
                 ->value('gap') ?? 0;
 
             // 3) Stale SKUs (no movement in 90+ days), using COALESCE(last_updated, updated_at)
-            $staleThreshold = now()->subDays(90);
-            $staleSkus = (clone $suppliesQuery)
-                ->where('current_stock', '>', 0)
-                ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
-                ->select(
-                    'id', 'supply_number', 'description', 'current_stock', 'unit_cost', 'updated_at', 'last_updated',
-                    DB::raw('(current_stock * unit_cost) as on_hand_value')
-                )
-                ->orderByDesc('on_hand_value')
-                ->limit(8)
-                ->get();
-            $staleSkusCount = (clone $suppliesQuery)
-                ->where('current_stock', '>', 0)
-                ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
-                ->count();
+            try {
+                $staleThreshold = now()->subDays(90);
+                $staleSkus = (clone $suppliesQuery)
+                    ->where('current_stock', '>', 0)
+                    ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
+                    ->select(
+                        'id', 'supply_number', 'description', 'current_stock', 'unit_cost', 'updated_at', 'last_updated',
+                        DB::raw('(current_stock * unit_cost) as on_hand_value')
+                    )
+                    ->orderByDesc('on_hand_value')
+                    ->limit(8)
+                    ->get();
+                $staleSkusCount = (clone $suppliesQuery)
+                    ->where('current_stock', '>', 0)
+                    ->whereRaw('COALESCE(last_updated, updated_at) < ?', [$staleThreshold])
+                    ->count();
+                \Log::info('staleSkus query successful', ['count' => $staleSkus->count(), 'staleSkusCount' => $staleSkusCount]);
+            } catch (\Exception $e) {
+                \Log::error('staleSkus query failed', ['error' => $e->getMessage()]);
+                $staleSkus = collect();
+                $staleSkusCount = 0;
+            }
 
             // 4) Category risk: categories with most low/out-of-stock SKUs
-            $categoryLowCounts = (clone $suppliesQuery)
-                ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
-                ->whereColumn('current_stock', '<', 'min_stock')
-                ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, COUNT(*) as c")
-                ->groupBy('categories.name')
-                ->orderByDesc('c')
-                ->limit(5)
-                ->get();
+            try {
+                $categoryLowCounts = (clone $suppliesQuery)
+                    ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
+                    ->whereColumn('current_stock', '<', 'min_stock')
+                    ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, COUNT(*) as c")
+                    ->groupBy('categories.name')
+                    ->orderByDesc('c')
+                    ->limit(5)
+                    ->get();
+                \Log::info('categoryLowCounts query successful', ['count' => $categoryLowCounts->count()]);
+            } catch (\Exception $e) {
+                \Log::error('categoryLowCounts query failed', ['error' => $e->getMessage()]);
+                $categoryLowCounts = collect();
+            }
 
             // 5) Top on-hand value SKUs
             $topOnHandSupplies = (clone $suppliesQuery)
@@ -283,58 +349,34 @@ class Dashboard extends Component
                 ->limit(10)
                 ->get(['id','user_id','action','model','model_id','description','created_at']);
 
-            return compact(
-                'totalAssets',
-                'assetsValue',
-                'supplySkus',
-                'lowStock',
-                'suppliesValue',
-                'monthlyAssets',
-                'suppliesMonthly',
-                'transfersMonthly',
-                'assetsByStatus',
-                'assetsByCategoryValue',
-                'assetsByBranch',
-                'assetsByYear',
-                'stockOut',
-                'stockLow',
-                'stockOk',
-                'topSupplyCategories',
-                'topRoutes',
-                'recentActivity',
-                'lowStockItems',
-                'lowStockValueGap',
-                'staleSkus',
-                'staleSkusCount',
-                'categoryLowCounts',
-                'topOnHandSupplies'
-            );
-        });
+            // DEBUG: Check if variables exist before compact
+            $compactVars = [
+                'totalAssets' => isset($totalAssets),
+                'lowStockItems' => isset($lowStockItems),
+                'staleSkus' => isset($staleSkus),
+                'categoryLowCounts' => isset($categoryLowCounts),
+                'lowStockItems_count' => isset($lowStockItems) ? $lowStockItems->count() : 'not_set',
+                'staleSkus_count' => isset($staleSkus) ? $staleSkus->count() : 'not_set',
+                'categoryLowCounts_count' => isset($categoryLowCounts) ? $categoryLowCounts->count() : 'not_set',
+            ];
+            \Log::info('Pre-compact variables for user ' . $user->id, $compactVars);
 
-        // Prepare simple arrays and labels expected by blade views (backwards-compatible)
+        // Complex cache logic commented out for debugging
+        */
+
+
+
+        // Simplified data processing for debugging
         $labels = [];
         $assetsMonthly = [];
         $monthlyLineLabels = [];
         $monthlyLineValues = [];
-        if (!empty($data['monthlyAssets'])) {
-            // monthlyAssets contains objects with m and c where m is YYYY-MM
-            $labels = $data['monthlyAssets']->pluck('m')->all();
-            $assetsMonthly = $data['monthlyAssets']->pluck('c')->all();
-            $monthlyLineLabels = $labels;
-            $monthlyLineValues = $assetsMonthly;
-        }
-
-        // Use the monthly aggregates returned from the cached payload (computed inside closure)
-        $suppliesMonthly = $data['suppliesMonthly'] ?? [];
-        $transfersMonthly = $data['transfersMonthly'] ?? [];
-
-        // Assets count and value by branch for analytics blades expecting different variable names
-        $assetsCountByBranch = $data['assetsByBranch'] ?? collect();
-        $assetsValueByBranch = $data['assetsByBranch'] ?? collect();
-
-        // Alias category/value lists to names used in analytics view
-        $assetsValueByCategory = $data['assetsByCategoryValue'] ?? collect();
-        $suppliesValueByCategory = $data['topSupplyCategories'] ?? collect();
+        $suppliesMonthly = [];
+        $transfersMonthly = [];
+        $assetsCountByBranch = collect();
+        $assetsValueByBranch = collect();
+        $assetsValueByCategory = collect();
+        $suppliesValueByCategory = collect();
 
     // Merge prepared values into view data
         $viewData = array_merge($data, [
@@ -348,6 +390,13 @@ class Dashboard extends Component
             'assetsValueByBranch' => $assetsValueByBranch,
             'assetsValueByCategory' => $assetsValueByCategory,
             'suppliesValueByCategory' => $suppliesValueByCategory,
+            // Explicitly ensure these are included
+            'lowStockItems' => $data['lowStockItems'] ?? collect(),
+            'staleSkus' => $data['staleSkus'] ?? collect(),
+            'categoryLowCounts' => $data['categoryLowCounts'] ?? collect(),
+            'lowStockValueGap' => $data['lowStockValueGap'] ?? 0,
+            'staleSkusCount' => $data['staleSkusCount'] ?? 0,
+            'topOnHandSupplies' => $data['topOnHandSupplies'] ?? collect(),
         ]);
 
         // Dispatch a lightweight browser event so the frontend can initialize or update charts
@@ -363,7 +412,7 @@ class Dashboard extends Component
             'assetsByStatus' => is_object($data['assetsByStatus']) ? $data['assetsByStatus']->toArray() : ($data['assetsByStatus'] ?? []),
         ];
 
-        $this->dispatchBrowserEvent('dashboard:update', $payload);
+        $this->dispatch('dashboard:update', $payload);
         // Livewire v3 friendly event for the supply officer charts module
         $this->dispatch(
             'supplyDashboard:update',
@@ -376,6 +425,17 @@ class Dashboard extends Component
             stockOk: (int) ($payload['stockOk'] ?? 0),
             assetsByStatus: $payload['assetsByStatus'] ?? []
         );
+
+        // DEBUG: Add debug info directly to viewData
+        $viewData['debugInfo'] = [
+            'cache_data_keys' => array_keys($data),
+            'has_lowStockItems_in_cache' => isset($data['lowStockItems']),
+            'has_staleSkus_in_cache' => isset($data['staleSkus']),
+            'has_categoryLowCounts_in_cache' => isset($data['categoryLowCounts']),
+            'lowStockItems_in_cache_count' => isset($data['lowStockItems']) ? $data['lowStockItems']->count() : 'not_set',
+            'viewData_keys' => array_keys($viewData),
+            'has_lowStockItems_in_viewData' => isset($viewData['lowStockItems']),
+        ];
 
         return view('livewire.admin.dashboard', $viewData);
     }
