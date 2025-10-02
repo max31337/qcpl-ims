@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Gate;
 use App\Models\Asset;
 use App\Policies\AssetPolicy;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -40,5 +41,9 @@ class AppServiceProvider extends ServiceProvider
             $viewPath = 'components.ui.' . str_replace('-', '.', $c);
             Blade::component($viewPath, 'ui-' . $c);
         }
+
+        // Configure pagination to use Tailwind CSS by default
+        Paginator::defaultView('pagination::tailwind');
+        Paginator::defaultSimpleView('pagination::simple-tailwind');
     }
 }
