@@ -501,6 +501,7 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
 <script>
   // Analytics payload for charts
   window.__analytics_payload = {!! json_encode([
@@ -513,12 +514,126 @@
     'stockLow' => (int) ($stockLow ?? 0),
     'stockOk' => (int) ($stockOk ?? 0),
     'assetsValueByCategory' => ($assetsValueByCategory ?? collect())->map(function($item) {
-      return ['name' => $item->name, 'v' => $item->v ?? 0];
+      return ['name' => $item->name, 'v' => floatval($item->v ?? 0)];
     })->toArray(),
     'suppliesValueByCategory' => ($suppliesValueByCategory ?? collect())->map(function($item) {
-      return ['name' => $item->name, 'v' => $item->v ?? 0];
+      return ['name' => $item->name, 'v' => floatval($item->v ?? 0)];
     })->toArray(),
   ], JSON_UNESCAPED_UNICODE) !!};
+
+  // Store chart instances
+  let chartInstances = {};
+
+  // Create pie chart function
+  function createPieChart(elementId, data, colors) {
+    const element = document.getElementById(elementId);
+    if (!element || !data || data.length === 0) return null;
+
+    // Destroy existing chart if it exists
+    if (chartInstances[elementId]) {
+      chartInstances[elementId].destroy();
+      delete chartInstances[elementId];
+    }
+
+    // Clear the element content to remove any existing charts
+    element.innerHTML = '';
+
+    const labels = data.map(item => item.name);
+    const values = data.map(item => item.v);
+
+    const options = {
+      chart: {
+        type: 'pie',
+        height: '100%',
+        width: '100%',
+        toolbar: {
+          show: false
+        },
+        animations: {
+          enabled: true,
+          easing: 'easeinout',
+          speed: 800
+        }
+      },
+      series: values,
+      labels: labels,
+      colors: colors,
+      legend: {
+        show: false
+      },
+      dataLabels: {
+        enabled: true,
+        style: {
+          fontSize: '11px',
+          fontWeight: 'bold',
+          colors: ['#fff']
+        },
+        formatter: function(val, opts) {
+          return opts.w.config.labels[opts.seriesIndex];
+        }
+      },
+      tooltip: {
+        enabled: true,
+        theme: 'dark',
+        y: {
+          formatter: function(value) {
+            return '₱' + new Intl.NumberFormat().format(value);
+          }
+        }
+      },
+      stroke: {
+        width: 2,
+        colors: ['#ffffff']
+      },
+      plotOptions: {
+        pie: {
+          donut: {
+            size: '0%'
+          },
+          expandOnClick: false
+        }
+      },
+      responsive: [{
+        breakpoint: 480,
+        options: {
+          chart: {
+            width: '100%'
+          }
+        }
+      }]
+    };
+
+    chartInstances[elementId] = new ApexCharts(element, options);
+    chartInstances[elementId].render();
+    return chartInstances[elementId];
+  }
+
+  // Initialize pie charts
+  function initializePieCharts() {
+    console.log('Initializing pie charts...');
+    
+    // Assets Category Pie Chart
+    const assetsData = window.__analytics_payload.assetsValueByCategory;
+    const assetsColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
+    
+    if (assetsData && assetsData.length > 0) {
+      console.log('Creating assets pie chart with data:', assetsData);
+      createPieChart('assetsCategoryPie', assetsData, assetsColors);
+    } else {
+      console.warn('No assets category data available');
+    }
+
+    // Supplies Category Pie Chart
+    const suppliesData = window.__analytics_payload.suppliesValueByCategory;
+    const suppliesColors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
+    
+    if (suppliesData && suppliesData.length > 0) {
+      console.log('Creating supplies pie chart with data:', suppliesData);
+      createPieChart('suppliesCategoryPie', suppliesData, suppliesColors);
+    } else {
+      console.warn('No supplies category data available');
+    }
+  }
 
   // Function to initialize charts with retry mechanism
   function initializeAnalyticsCharts(retries = 5) {
@@ -536,8 +651,12 @@
       }
     }
     
-    console.log('Chart elements found, initializing...');
-    window.dispatchEvent(new CustomEvent('analytics:update', { detail: window.__analytics_payload }));
+    console.log('Chart elements found, initializing pie charts...');
+    
+    // Initialize pie charts directly (no event dispatch to avoid duplicates)
+    setTimeout(() => {
+      initializePieCharts();
+    }, 100);
   }
 
   // Initialize when DOM is ready
@@ -555,4 +674,7 @@
       setTimeout(initializeAnalyticsCharts, 100);
     });
   }
+
+  // Debug: Log payload on load
+  console.log('Analytics payload loaded:', window.__analytics_payload);
 </script>
