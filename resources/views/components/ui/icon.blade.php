@@ -78,6 +78,9 @@
       'grid-3x3' => '<rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="M15 3v18"/><path d="M3 9h18"/><path d="M3 15h18"/>',
       'chevron-up' => '<path d="m18 15-6-6-6 6"/>',
       'chevron-down' => '<path d="m6 9 6 6 6-6"/>',
+      'file-text' => '<path d="M4 2h10l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/><path d="M8 12h8"/><path d="M8 16h8"/><path d="M8 8h2"/>',
+      'document' => '<path d="M4 2h10l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M14 2v6h6"/>',
+      'clipboard' => '<rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>',
   ];
   $path = $paths[$name] ?? $paths['circle'];
 @endphp
