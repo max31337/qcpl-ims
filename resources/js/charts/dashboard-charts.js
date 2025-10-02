@@ -1,5 +1,4 @@
-import { Chart, registerables } from 'chart.js';
-Chart.register(...registerables);
+import ApexCharts from 'apexcharts';
 
 let assetsLineChart = null;
 let suppliesBarChart = null;
@@ -7,47 +6,59 @@ let assetsDonutChart = null;
 let currentStatusPayload = {};
 let activeStatuses = new Set();
 
-function createLineChart(ctx, labels = [], data = []) {
+function createLineChart(el, labels = [], data = []) {
   if (assetsLineChart) assetsLineChart.destroy();
-  assetsLineChart = new Chart(ctx, {
-    type: 'line',
-    data: { labels, datasets: [{ label: 'Assets created', data, borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.12)', tension: 0.3, fill: true, pointRadius: 3 }] },
-    options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } }, plugins: { legend: { display: false } } }
-  });
+  const options = {
+    chart: { type: 'line', height: '100%', toolbar: { show: false } },
+    series: [{ name: 'Assets created', data }],
+    xaxis: { categories: labels },
+    stroke: { curve: 'smooth', width: 2 },
+    colors: ['#3b82f6'],
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.1 } },
+    markers: { size: 4, strokeWidth: 2, strokeColors: '#ffffff' },
+    grid: { strokeDashArray: 4 },
+    tooltip: { theme: 'dark' },
+    legend: { show: false }
+  };
+  assetsLineChart = new ApexCharts(el, options);
+  assetsLineChart.render();
   return assetsLineChart;
 }
 
-function createBarChart(ctx, labels = ['Out','Low','Healthy'], data = []) {
+function createBarChart(el, labels = ['Out','Low','Healthy'], data = []) {
   if (suppliesBarChart) suppliesBarChart.destroy();
-  suppliesBarChart = new Chart(ctx, {
-    type: 'bar',
-    data: { labels, datasets: [{ data, backgroundColor: ['#ef4444', '#f59e0b', '#10b981'] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-  });
+  const options = {
+    chart: { type: 'bar', height: '100%', toolbar: { show: false } },
+    series: [{ name: 'Count', data }],
+    xaxis: { categories: labels },
+    plotOptions: { bar: { borderRadius: 8, columnWidth: '60%', distributed: true } },
+    dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 'bold' } },
+    colors: ['#ef4444', '#f59e0b', '#10b981'],
+    grid: { strokeDashArray: 4, yaxis: { lines: { show: true } } },
+    tooltip: { theme: 'dark' },
+    legend: { show: false }
+  };
+  suppliesBarChart = new ApexCharts(el, options);
+  suppliesBarChart.render();
   return suppliesBarChart;
 }
 
-function createDonutChart(ctx, labels = [], data = [], colors = []) {
+function createDonutChart(el, labels = [], data = [], colors = []) {
   if (assetsDonutChart) assetsDonutChart.destroy();
-  assetsDonutChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: { labels, datasets: [{ data, backgroundColor: colors }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { display: false } } }
-  });
+  const options = {
+    chart: { type: 'donut', height: '100%', toolbar: { show: false } },
+    series: data,
+    labels,
+    colors,
+    legend: { show: false },
+    dataLabels: { enabled: true, style: { fontSize: '12px', fontWeight: 'bold' } },
+    stroke: { width: 2, colors: ['#ffffff'] },
+    tooltip: { theme: 'dark' },
+    plotOptions: { pie: { donut: { size: '65%', labels: { show: false } } } }
+  };
+  assetsDonutChart = new ApexCharts(el, options);
+  assetsDonutChart.render();
   return assetsDonutChart;
-}
-
-function ensureCanvasHighDPR(canvas) {
-  const dpr = window.devicePixelRatio || 1;
-  // prefer explicit width/height attributes on the canvas, fall back to client size or 300
-  const attrW = parseInt(canvas.getAttribute('width')) || Math.max(1, Math.round(canvas.clientWidth)) || 300;
-  const attrH = parseInt(canvas.getAttribute('height')) || Math.max(1, Math.round(canvas.clientHeight)) || 300;
-  canvas.width = attrW * dpr;
-  canvas.height = attrH * dpr;
-  canvas.style.maxWidth = attrW + 'px';
-  canvas.style.maxHeight = attrH + 'px';
-  canvas.style.width = 'auto';
-  canvas.style.height = 'auto';
 }
 
 function renderAll(payload) {
@@ -61,28 +72,24 @@ function renderAll(payload) {
     // Line
     const assetsEl = document.getElementById('assetsLineChart');
     if (assetsEl && payload.labels && payload.assetsValues) {
-      // set container height if needed
-      assetsEl.style.height = '180px';
-      createLineChart(assetsEl.getContext('2d'), payload.labels, payload.assetsValues);
+      createLineChart(assetsEl, payload.labels, payload.assetsValues);
     }
 
     // Bar
     const suppliesEl = document.getElementById('suppliesBarChart');
     if (suppliesEl) {
-      suppliesEl.style.height = '180px';
-      createBarChart(suppliesEl.getContext('2d'), ['Out','Low','Healthy'], [payload.stockOut || 0, payload.stockLow || 0, payload.stockOk || 0]);
+      createBarChart(suppliesEl, ['Out','Low','Healthy'], [payload.stockOut || 0, payload.stockLow || 0, payload.stockOk || 0]);
     }
 
     // Donut
     const donutEl = document.getElementById('assetsDonutChart');
     if (donutEl && payload.assetsByStatus) {
-      ensureCanvasHighDPR(donutEl, 300, 300);
       const statusObj = payload.assetsByStatus || {};
       const sLabels = Object.keys(statusObj || {});
       // compute values respecting activeStatuses set
       const sValues = sLabels.map(k => (activeStatuses.has(k) ? (statusObj[k] || 0) : 0));
       const sColors = sLabels.map(s => s === 'active' ? '#16a34a' : (s === 'condemn' ? '#f59e0b' : '#ef4444'));
-      createDonutChart(donutEl.getContext('2d'), sLabels, sValues, sColors);
+      createDonutChart(donutEl, sLabels, sValues, sColors);
     }
   } catch (err) {
     // swallow - charts are non-critical

@@ -180,9 +180,9 @@
       <div class="flex items-center justify-between gap-4">
         <div>
           <div class="text-sm text-muted-foreground">Total Assets</div>
-          <div class="text-2xl font-semibold">{{ number_format($totalAssets ?? 0) }}</div>
+          <div class="text-2xl font-semibold tracking-tight">{{ number_format($totalAssets ?? 0) }}</div>
         </div>
-        <div class="text-muted-foreground bg-card p-2 rounded-md">
+        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
           <x-ui.icon name="package" class="w-5 h-5" />
         </div>
       </div>
@@ -192,9 +192,9 @@
       <div class="flex items-center justify-between gap-4">
         <div>
           <div class="text-sm text-muted-foreground">Assets Value</div>
-          <div class="text-2xl font-semibold">₱{{ number_format($assetsValue ?? 0, 2) }}</div>
+          <div class="text-2xl font-semibold tracking-tight">₱{{ number_format($assetsValue ?? 0, 2) }}</div>
         </div>
-        <div class="text-muted-foreground bg-card p-2 rounded-md">
+        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
           <x-ui.icon name="credit-card" class="w-5 h-5" />
         </div>
       </div>
@@ -204,9 +204,9 @@
       <div class="flex items-center justify-between gap-4">
         <div>
           <div class="text-sm text-muted-foreground">Supply SKUs</div>
-          <div class="text-2xl font-semibold">{{ number_format($supplySkus ?? 0) }}</div>
+          <div class="text-2xl font-semibold tracking-tight">{{ number_format($supplySkus ?? 0) }}</div>
         </div>
-        <div class="text-muted-foreground bg-card p-2 rounded-md">
+        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
           <x-ui.icon name="box" class="w-5 h-5" />
         </div>
       </div>
@@ -216,9 +216,9 @@
       <div class="flex items-center justify-between gap-4">
         <div>
           <div class="text-sm text-muted-foreground">Supplies On-hand Value</div>
-          <div class="text-2xl font-semibold">₱{{ number_format($suppliesValue ?? 0, 2) }}</div>
+          <div class="text-2xl font-semibold tracking-tight">₱{{ number_format($suppliesValue ?? 0, 2) }}</div>
         </div>
-        <div class="text-muted-foreground bg-card p-2 rounded-md">
+        <div class="text-muted-foreground bg-muted/50 p-2 rounded-md ring-1 ring-border">
           <x-ui.icon name="dollar-sign" class="w-5 h-5" />
         </div>
       </div>
@@ -228,65 +228,71 @@
   {{-- Charts & summaries (shadcn-like card layout) --}}
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <x-ui-card>
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <div class="flex items-center gap-2">
-            <x-ui.icon name="line-chart" class="w-5 h-5 text-primary" />
-            <div class="text-sm font-medium">Assets Created</div>
+      <x-slot name="header">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <x-ui.icon name="line-chart" class="w-5 h-5 text-primary" />
+              <div class="text-sm font-medium">Assets Created</div>
+            </div>
+            <div class="text-xs text-muted-foreground">Last 12 months</div>
           </div>
-          <div class="text-xs text-muted-foreground">Last 12 months</div>
         </div>
-      </div>
-      <div class="h-44">
-        <canvas id="assetsLineChart" aria-label="Assets created over time"></canvas>
+      </x-slot>
+      <div class="h-56 md:h-64">
+        <div id="assetsLineChart" aria-label="Assets created over time" class="w-full h-full"></div>
       </div>
     </x-ui-card>
 
     <x-ui-card>
-      <div class="flex items-center justify-between mb-2">
-        <div>
-          <div class="flex items-center gap-2">
-            <x-ui.icon name="bar-chart" class="w-5 h-5 text-amber-500" />
-            <div class="text-sm font-medium">Supplies Stock Health</div>
+      <x-slot name="header">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="flex items-center gap-2">
+              <x-ui.icon name="bar-chart" class="w-5 h-5 text-amber-500" />
+              <div class="text-sm font-medium">Supplies Stock Health</div>
+            </div>
+            <div class="text-xs text-muted-foreground">Out / Low / Healthy</div>
           </div>
-          <div class="text-xs text-muted-foreground">Out / Low / Healthy</div>
         </div>
-      </div>
-      <div class="h-44">
-        <canvas id="suppliesBarChart" aria-label="Supplies stock health"></canvas>
+      </x-slot>
+      <div class="h-56 md:h-64">
+        <div id="suppliesBarChart" aria-label="Supplies stock health" class="w-full h-full"></div>
       </div>
     </x-ui-card>
 
     <x-ui-card>
-      <div class="flex items-center justify-between mb-2">
-        <div class="flex items-center gap-2">
-          <x-ui.icon name="pie-chart" class="w-5 h-5 text-rose-500" />
-          <div class="text-sm font-medium">Assets by Status</div>
-        </div>
-        <div class="flex items-center gap-2">
-          <div class="text-xs text-muted-foreground hidden sm:block">Breakdown</div>
-          <div id="assetsByStatusToggles" class="flex items-center gap-1">
-            @foreach(($assetsByStatus ?? []) as $status => $count)
-              <button type="button" data-status="{{ $status }}" aria-pressed="true" class="status-toggle inline-flex items-center gap-2 px-2 py-1 rounded-md border bg-card text-muted-foreground text-xs">
-                <span class="inline-block h-2 w-2 rounded-full" style="background:{{ $status === 'active' ? '#16a34a' : ($status === 'condemn' ? '#f59e0b' : '#ef4444') }}"></span>
-                <span class="sr-only">{{ ucfirst($status) }}</span>
-              </button>
-            @endforeach
+      <x-slot name="header">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <x-ui.icon name="pie-chart" class="w-5 h-5 text-rose-500" />
+            <div class="text-sm font-medium">Assets by Status</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="text-xs text-muted-foreground hidden sm:block">Toggle</div>
+            <div id="assetsByStatusToggles" class="flex items-center gap-1">
+              @foreach(($assetsByStatus ?? []) as $status => $count)
+                <button type="button" data-status="{{ $status }}" aria-pressed="true" class="status-toggle inline-flex items-center gap-2 px-2 py-1 rounded-md border bg-background hover:bg-muted text-xs transition">
+                  <span class="inline-block h-2 w-2 rounded-full" style="background:{{ $status === 'active' ? '#16a34a' : ($status === 'condemn' ? '#f59e0b' : '#ef4444') }}"></span>
+                  <span class="capitalize">{{ $status }}</span>
+                </button>
+              @endforeach
+            </div>
           </div>
         </div>
-      </div>
-      <div class="flex flex-col items-center gap-2">
+      </x-slot>
+      <div class="flex flex-col items-center gap-3">
         <div class="flex-shrink-0">
           <!-- Larger donut for better visibility -->
-          <canvas id="assetsDonutChart" aria-label="Assets by status" width="204" height="204" style="max-width:204px; max-height:204px;"></canvas>
+          <div id="assetsDonutChart" aria-label="Assets by status" class="w-56 h-56"></div>
         </div>
-        <div class="w-full mt-2">
+        <div class="w-full">
           <ul class="grid grid-cols-1 gap-2 text-sm">
             @foreach(($assetsByStatus ?? []) as $status => $count)
-              <li class="flex items-center justify-between px-3 py-1 rounded-md border bg-card">
+              <li class="flex items-center justify-between px-3 py-1.5 rounded-md border bg-background">
                 <div class="flex items-center gap-2">
                   <span class="inline-block h-3 w-3 rounded-full" style="background:{{ $status === 'active' ? '#16a34a' : ($status === 'condemn' ? '#f59e0b' : '#ef4444') }}"></span>
-                  <span class="font-medium">{{ ucfirst($status) }}</span>
+                  <span class="font-medium capitalize">{{ $status }}</span>
                 </div>
                 <div class="font-mono text-xs">{{ $count }}</div>
               </li>
@@ -297,51 +303,76 @@
     </x-ui-card>
   </div>
 
-  {{-- Supplies stock health and recent activity --}}
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <x-ui-card title="Supplies Stock Health">
-      <div class="grid grid-cols-3 gap-3 text-center">
-        <div>
-          <div class="text-sm text-muted-foreground">Out of Stock</div>
-          <div class="text-xl font-semibold">{{ number_format($stockOut ?? 0) }}</div>
+  {{-- Summary sections --}}
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <x-ui-card>
+      <x-slot name="header">
+        <div class="flex items-center gap-2">
+          <x-ui.icon name="bar-chart" class="w-5 h-5 text-emerald-500" />
+          <div class="text-sm font-medium">Supplies Stock Health</div>
         </div>
-        <div>
-          <div class="text-sm text-muted-foreground">Low Stock</div>
-          <div class="text-xl font-semibold">{{ number_format($stockLow ?? 0) }}</div>
+      </x-slot>
+      <div class="grid grid-cols-3 gap-4 text-center mb-4">
+        <div class="p-3 rounded-lg bg-red-50 border border-red-100">
+          <div class="text-sm text-red-600 font-medium">Out of Stock</div>
+          <div class="text-2xl font-bold text-red-700">{{ number_format($stockOut ?? 0) }}</div>
         </div>
-        <div>
-          <div class="text-sm text-muted-foreground">Healthy</div>
-          <div class="text-xl font-semibold">{{ number_format($stockOk ?? 0) }}</div>
+        <div class="p-3 rounded-lg bg-amber-50 border border-amber-100">
+          <div class="text-sm text-amber-600 font-medium">Low Stock</div>
+          <div class="text-2xl font-bold text-amber-700">{{ number_format($stockLow ?? 0) }}</div>
+        </div>
+        <div class="p-3 rounded-lg bg-emerald-50 border border-emerald-100">
+          <div class="text-sm text-emerald-600 font-medium">Healthy</div>
+          <div class="text-2xl font-bold text-emerald-700">{{ number_format($stockOk ?? 0) }}</div>
         </div>
       </div>
       @if(!empty($topSupplyCategories))
-        <div class="mt-4 text-sm">
-          <div class="text-muted-foreground">Top supply categories by value</div>
-          <ul class="mt-2">
+        <div class="pt-4 border-t">
+          <div class="text-sm font-medium text-muted-foreground mb-3">Top supply categories by value</div>
+          <ul class="space-y-2">
             @foreach($topSupplyCategories as $c)
-              <li class="flex justify-between"><span>{{ $c->name }}</span><span class="font-mono">₱{{ number_format($c->v ?? 0, 2) }}</span></li>
+              <li class="flex justify-between items-center py-2 px-3 rounded-md bg-muted/30">
+                <span class="font-medium">{{ $c->name }}</span>
+                <span class="font-mono text-sm">₱{{ number_format($c->v ?? 0, 2) }}</span>
+              </li>
             @endforeach
           </ul>
         </div>
       @endif
     </x-ui-card>
 
-    <x-ui-card title="Recent Activity">
+    <x-ui-card>
+      <x-slot name="header">
+        <div class="flex items-center gap-2">
+          <x-ui.icon name="activity" class="w-5 h-5 text-blue-500" />
+          <div class="text-sm font-medium">Recent Activity</div>
+        </div>
+      </x-slot>
       @if(!empty($recentActivity) && $recentActivity->count())
-        <div class="text-sm text-muted-foreground mb-2">Latest activity</div>
-        <div class="space-y-2 text-sm">
+        <div class="space-y-3">
           @foreach($recentActivity as $a)
-            <div class="border rounded p-2">
-              <div class="flex justify-between">
-                <div class="font-medium">{{ $a->description }}</div>
-                <div class="text-xs text-muted-foreground">{{ $a->created_at->diffForHumans() }}</div>
+            <div class="flex items-start gap-3 p-3 rounded-lg bg-muted/30 border">
+              <div class="w-2 h-2 rounded-full bg-primary mt-2 flex-shrink-0"></div>
+              <div class="flex-1 min-w-0">
+                <div class="flex justify-between items-start gap-2">
+                  <div class="font-medium truncate">{{ $a->description }}</div>
+                  <div class="text-xs text-muted-foreground flex-shrink-0">{{ $a->created_at->diffForHumans() }}</div>
+                </div>
+                <div class="text-xs text-muted-foreground mt-1">
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    {{ $a->action }}
+                  </span>
+                  on {{ $a->model }} #{{ $a->model_id }}
+                </div>
               </div>
-              <div class="text-xs text-muted-foreground">{{ $a->action }} on {{ $a->model }} #{{ $a->model_id }}</div>
             </div>
           @endforeach
         </div>
       @else
-        <div class="text-sm text-muted-foreground">No recent activity</div>
+        <div class="text-center py-8">
+          <x-ui.icon name="clock" class="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+          <div class="text-sm text-muted-foreground">No recent activity</div>
+        </div>
       @endif
     </x-ui-card>
   </div>

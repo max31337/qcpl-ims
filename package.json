@@ -7,7 +7,6 @@
         "dev": "vite"
     },
     "dependencies": {
-        "chart.js": "^4.4.0",
         "apexcharts": "^4.4.0"
     },
     "devDependencies": {
