@@ -14,6 +14,7 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @livewireStyles
     </head>
     <body class="font-sans antialiased bg-background text-foreground overflow-x-hidden" style="font-family: 'Inter', system-ui, sans-serif;">
         <div class="grid min-h-screen w-full md:grid-cols:[220px_1fr] lg:grid-cols:[280px_1fr] md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
@@ -106,5 +107,6 @@
                 </main>
             </div>
         </div>
+        @livewireScripts
     </body>
 </html>

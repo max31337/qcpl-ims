@@ -1,3 +1,64 @@
+<?php
+
+use App\Models\Supply;
+use App\Models\Category;
+use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Url;
+use Livewire\WithPagination;
+use Livewire\Volt\Component;
+
+new class extends Component
+{
+    use WithPagination;
+
+    #[Url(as: 'q')]
+    public $search = '';
+
+    #[Url]
+    public $category = '';
+
+    #[Url]
+    public $status = '';
+
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->category = '';
+        $this->status = '';
+        $this->resetPage();
+    }
+
+    public function with(): array
+    {
+        $user = Auth::user();
+        $q = Supply::forUser($user)->with('category');
+
+        if ($this->search) {
+            $q->where(function($r){
+                $r->where('supply_number','like','%'.$this->search.'%')
+                  ->orWhere('description','like','%'.$this->search.'%')
+                  ->orWhere('sku','like','%'.$this->search.'%');
+            });
+        }
+
+        if ($this->category) {
+            $q->where('category_id', $this->category);
+        }
+
+        if ($this->status) {
+            $q->where('status', $this->status);
+        }
+
+        $supplies = $q->orderByDesc('last_updated')->paginate(12);
+        $categories = Category::where('type','supply')->orderBy('name')->get();
+
+        return [
+            'supplies' => $supplies,
+            'categories' => $categories
+        ];
+    }
+}; ?>
+
 <div class="space-y-6">
     <div class="flex items-start justify-between">
         <div>

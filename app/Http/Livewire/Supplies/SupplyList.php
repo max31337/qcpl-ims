@@ -13,12 +13,26 @@ class SupplyList extends Component
     use WithPagination;
 
     public $search = '';
-    public $categoryFilter = '';
-    public $statusFilter = '';
+    public $category = '';
+    public $status = '';
 
-    protected $queryString = ['search','categoryFilter','statusFilter'];
+    protected $queryString = [
+        'search' => ['except' => '', 'as' => 'q'],
+        'category' => ['except' => ''],
+        'status' => ['except' => '']
+    ];
 
     public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCategory()
+    {
+        $this->resetPage();
+    }
+
+    public function updatingStatus()
     {
         $this->resetPage();
     }
@@ -31,21 +45,30 @@ class SupplyList extends Component
         if ($this->search) {
             $q->where(function($r){
                 $r->where('supply_number','like','%'.$this->search.'%')
-                  ->orWhere('description','like','%'.$this->search.'%');
+                  ->orWhere('description','like','%'.$this->search.'%')
+                  ->orWhere('sku','like','%'.$this->search.'%');
             });
         }
 
-        if ($this->categoryFilter) {
-            $q->where('category_id', $this->categoryFilter);
+        if ($this->category) {
+            $q->where('category_id', $this->category);
         }
 
-        if ($this->statusFilter) {
-            $q->where('status', $this->statusFilter);
+        if ($this->status) {
+            $q->where('status', $this->status);
         }
 
         $supplies = $q->orderByDesc('last_updated')->paginate(12);
         $categories = Category::where('type','supply')->orderBy('name')->get();
 
         return view('livewire.supplies.supply-list', compact('supplies','categories'));
+    }
+
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->category = '';
+        $this->status = '';
+        $this->resetPage();
     }
 }

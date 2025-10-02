@@ -51,7 +51,7 @@ Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer
     ->get('/admin/assets/reports', \App\Livewire\Assets\AssetReports::class)
     ->name('admin.assets.reports');
 
-// Supplies Management Routes
+// Supplies Management Routes  
 Route::middleware(['auth', 'verified', 'mfa'])->prefix('supplies')->name('supplies.')->group(function () {
     Route::get('/', \App\Livewire\Supplies\SupplyList::class)->name('index');
     Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
