@@ -2,7 +2,7 @@ import ApexCharts from 'apexcharts';
 
 let analyticsCharts = {};
 
-// Create line chart for assets created
+// Create line chart for assets created with enhanced visibility
 function createAnalyticsLineChart(el, labels = [], data = []) {
   if (analyticsCharts.assetsLine) analyticsCharts.assetsLine.destroy();
   const options = {
@@ -10,7 +10,12 @@ function createAnalyticsLineChart(el, labels = [], data = []) {
       type: 'line', 
       height: '100%', 
       toolbar: { show: false },
-      background: 'transparent'
+      background: 'transparent',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800
+      }
     },
     series: [{ name: 'Assets created', data }],
     xaxis: { 
@@ -18,38 +23,57 @@ function createAnalyticsLineChart(el, labels = [], data = []) {
       labels: {
         style: {
           fontSize: '11px',
-          fontWeight: 500
+          fontWeight: 500,
+          colors: '#646cfaff'
         }
       }
     },
-    stroke: { curve: 'smooth', width: 3 },
-    colors: ['#3b82f6'],
+    stroke: { 
+      curve: 'smooth', 
+      width: 6,
+      lineCap: 'round'
+    },
+    colors: ['#1259f3ff'],
     fill: { 
-      type: 'gradient', 
+      type: 'solid', 
       gradient: { 
-        shade: 'light',
+        shade: 'dark',
         type: 'vertical',
-        shadeIntensity: 0.5, 
-        gradientToColors: ['#93c5fd'], 
-        opacityFrom: 0.4, 
-        opacityTo: 0.1 
+        shadeIntensity: 0.6, 
+        gradientToColors: ['#646cfaff'], 
+        opacityFrom: 1, 
+        opacityTo: 0.1,
+        stops: [0, 100]
       } 
     },
     markers: { 
-      size: 5, 
-      colors: ['#3b82f6'],
-      strokeWidth: 2, 
-      strokeColors: '#ffffff',
-      hover: { size: 7 }
+      size: 8, 
+      colors: ['#ffffff'],
+      strokeWidth: 4, 
+      strokeColors: '#2563eb',
+      hover: { 
+        size: 8,
+        sizeOffset: 4
+      }
     },
     grid: { 
       strokeDashArray: 3,
-      borderColor: '#e5e7eb'
+      borderColor: '#646cfaff',
+      yaxis: { lines: { show: true } },
+      xaxis: { lines: { show: false } }
     },
     tooltip: { 
       theme: 'dark',
       style: {
         fontSize: '12px'
+      },
+      marker: {
+        show: true
+      },
+      y: {
+        formatter: function (val) {
+          return val + ' assets created'
+        }
       }
     },
     legend: { show: false },
@@ -58,7 +82,8 @@ function createAnalyticsLineChart(el, labels = [], data = []) {
       labels: { 
         style: {
           fontSize: '11px',
-          fontWeight: 500
+          fontWeight: 500,
+          colors: '#6b7280'
         },
         formatter: function (val) {
           return Math.floor(val);
@@ -71,15 +96,30 @@ function createAnalyticsLineChart(el, labels = [], data = []) {
   return analyticsCharts.assetsLine;
 }
 
-// Create bar chart for supplies added
+// Create enhanced bar chart for supplies added and asset transfers
 function createAnalyticsBarChart(el, labels = [], data = [], color = '#6366f1') {
   const chartKey = `bar_${el.id}`;
   if (analyticsCharts[chartKey]) analyticsCharts[chartKey].destroy();
   
-  // Generate gradient colors based on the base color
+  // Generate enhanced gradient colors based on the base color
   let gradientColor = color;
-  if (color === '#6366f1') gradientColor = '#a5b4fc'; // indigo gradient
-  if (color === '#10b981') gradientColor = '#6ee7b7'; // emerald gradient
+  let labelText = 'Count';
+  if (color === '#8b5cf6') { 
+    gradientColor = '#c4b5fd'; // purple gradient
+    labelText = 'Supplies Added';
+  }
+  if (color === '#059669') { 
+    gradientColor = '#34d399'; // emerald gradient
+    labelText = 'Asset Transfers';
+  }
+  if (color === '#6366f1') { 
+    gradientColor = '#a5b4fc'; // indigo gradient
+    labelText = 'Supplies Added';
+  }
+  if (color === '#10b981') { 
+    gradientColor = '#6ee7b7'; // emerald gradient
+    labelText = 'Asset Transfers';
+  }
   if (color === '#f59e0b') gradientColor = '#fcd34d'; // amber gradient
   
   const options = {
@@ -87,22 +127,32 @@ function createAnalyticsBarChart(el, labels = [], data = [], color = '#6366f1') 
       type: 'bar', 
       height: '100%', 
       toolbar: { show: false },
-      background: 'transparent'
+      background: 'transparent',
+      animations: {
+        enabled: true,
+        easing: 'easeinout',
+        speed: 800,
+        animateGradually: {
+          enabled: true,
+          delay: 150
+        }
+      }
     },
-    series: [{ name: 'Count', data }],
+    series: [{ name: labelText, data }],
     xaxis: { 
       categories: labels,
       labels: {
         style: {
           fontSize: '11px',
-          fontWeight: 500
+          fontWeight: 500,
+          colors: '#6b7280'
         }
       }
     },
     plotOptions: { 
       bar: { 
-        borderRadius: 6, 
-        columnWidth: '50%', 
+        borderRadius: 8, 
+        columnWidth: '55%', 
         distributed: false,
         dataLabels: {
           position: 'top'
@@ -113,7 +163,7 @@ function createAnalyticsBarChart(el, labels = [], data = [], color = '#6366f1') 
       enabled: true, 
       offsetY: -20,
       style: { 
-        fontSize: '11px', 
+        fontSize: '12px', 
         fontWeight: 'bold',
         colors: [color]
       }
@@ -122,14 +172,19 @@ function createAnalyticsBarChart(el, labels = [], data = [], color = '#6366f1') 
     fill: {
       type: 'gradient',
       gradient: {
-        shade: 'light',
+        shade: 'dark',
         type: 'vertical',
-        shadeIntensity: 0.3,
+        shadeIntensity: 0.5,
         gradientToColors: [gradientColor],
-        opacityFrom: 0.9,
-        opacityTo: 0.6,
+        opacityFrom: 0.95,
+        opacityTo: 0.7,
         stops: [0, 100]
       }
+    },
+    stroke: {
+      show: true,
+      width: 2,
+      colors: ['transparent']
     },
     grid: { 
       strokeDashArray: 3,
@@ -141,6 +196,11 @@ function createAnalyticsBarChart(el, labels = [], data = [], color = '#6366f1') 
       theme: 'dark',
       style: {
         fontSize: '12px'
+      },
+      y: {
+        formatter: function (val) {
+          return val + ' ' + labelText.toLowerCase()
+        }
       }
     },
     legend: { show: false },
@@ -149,7 +209,8 @@ function createAnalyticsBarChart(el, labels = [], data = [], color = '#6366f1') 
       labels: { 
         style: {
           fontSize: '11px',
-          fontWeight: 500
+          fontWeight: 500,
+          colors: '#6b7280'
         },
         formatter: function (val) {
           return Math.floor(val);
@@ -304,13 +365,13 @@ function renderAnalyticsCharts(payload) {
     // Supplies bar chart
     const suppliesBarEl = document.getElementById('suppliesAnalyticsBar');
     if (suppliesBarEl && payload.labels && payload.suppliesMonthly) {
-      createAnalyticsBarChart(suppliesBarEl, payload.labels, payload.suppliesMonthly, '#6366f1');
+      createAnalyticsBarChart(suppliesBarEl, payload.labels, payload.suppliesMonthly, '#8b5cf6');
     }
 
     // Transfers bar chart
     const transfersBarEl = document.getElementById('transfersAnalyticsBar');
     if (transfersBarEl && payload.labels && payload.transfersMonthly) {
-      createAnalyticsBarChart(transfersBarEl, payload.labels, payload.transfersMonthly, '#10b981');
+      createAnalyticsBarChart(transfersBarEl, payload.labels, payload.transfersMonthly, '#059669');
     }
 
     // Assets by status donut
