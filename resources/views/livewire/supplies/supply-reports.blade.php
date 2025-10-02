@@ -6,6 +6,9 @@
             <p class="text-muted-foreground">Summary and exports for supplies</p>
         </div>
         <div class="flex items-center gap-2">
+            <button wire:click="exportExcel" class="inline-flex items-center rounded-md bg-green-600 text-white px-3 py-2 text-sm hover:bg-green-700">
+                <x-ui.icon name="file-spreadsheet" class="mr-2 h-4 w-4" /> Export Excel
+            </button>
             <button wire:click="exportCsv" class="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-accent">
                 <x-ui.icon name="download" class="mr-2 h-4 w-4" /> Export CSV
             </button>

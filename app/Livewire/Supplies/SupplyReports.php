@@ -4,6 +4,7 @@ namespace App\Livewire\Supplies;
 
 use App\Models\Supply;
 use App\Models\Category;
+use App\Exports\SuppliesExport;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -14,6 +15,29 @@ class SupplyReports extends Component
     public string $categoryFilter = '';
     public string $statusFilter = '';
 
+    /**
+     * Export supplies to Excel with enhanced formatting
+     * 
+     * This method uses the new ExcelReportService to generate a professionally 
+     * formatted Excel file with headers, styling, and metadata
+     */
+    public function exportExcel()
+    {
+        $export = new SuppliesExport(
+            auth()->user(),
+            $this->categoryFilter ?: null,
+            $this->statusFilter ?: null,
+            null, // search parameter
+            null, // from date
+            null  // to date
+        );
+
+        return $export->download();
+    }
+
+    /**
+     * Legacy CSV export method for backwards compatibility
+     */
     public function exportCsv()
     {
         $user = auth()->user();

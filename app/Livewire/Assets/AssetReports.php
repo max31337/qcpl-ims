@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Branch;
 use App\Models\Division;
 use App\Models\Section;
+use App\Exports\AssetsExport;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -28,49 +29,27 @@ class AssetReports extends Component
         $this->dateTo = now()->format('Y-m-d');
     }
 
-    // Export: Excel (fallback to CSV if package issues)
+    /**
+     * Export assets to Excel with enhanced formatting
+     * 
+     * This method uses the new ExcelReportService to generate a professionally 
+     * formatted Excel file with headers, styling, and metadata
+     */
     public function exportAssets()
     {
-        $assets = $this->buildQuery()->with(['category','currentBranch','currentDivision','currentSection'])
-            ->orderBy('property_number')->get();
+        $export = new AssetsExport(
+            auth()->user(),
+            $this->branchFilter ?: null,
+            $this->divisionFilter ?: null,
+            $this->sectionFilter ?: null,
+            $this->categoryFilter ?: null,
+            $this->statusFilter ?: null,
+            null, // search parameter
+            $this->dateFrom ?: null,
+            $this->dateTo ?: null
+        );
 
-        // Try Laravel Excel via response()->streamDownload() compatible CSV
-        $filename = 'assets-report-'.now()->format('Ymd-His').'.csv';
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"$filename\"",
-        ];
-
-        $noDataMessage = $this->noDataMessage();
-
-        $callback = function() use ($assets, $noDataMessage) {
-            $out = fopen('php://output', 'w');
-            fputcsv($out, ['Property Number','Description','Category','Quantity','Unit Cost','Total Cost','Status','Source','Date Acquired','Branch','Division','Section']);
-            if ($assets->isEmpty()) {
-                fputcsv($out, [$noDataMessage]);
-                fclose($out);
-                return;
-            }
-            foreach ($assets as $a) {
-                fputcsv($out, [
-                    $a->property_number,
-                    $a->description,
-                    optional($a->category)->name,
-                    $a->quantity,
-                    number_format((float)$a->unit_cost, 2, '.', ''),
-                    number_format((float)$a->total_cost, 2, '.', ''),
-                    $a->status,
-                    $a->source,
-                    optional($a->date_acquired)?->format('Y-m-d'),
-                    optional($a->currentBranch)->name,
-                    optional($a->currentDivision)->name,
-                    optional($a->currentSection)->name,
-                ]);
-            }
-            fclose($out);
-        };
-
-        return response()->streamDownload($callback, $filename, $headers);
+        return $export->download();
     }
 
     // Export: PDF via DomPDF

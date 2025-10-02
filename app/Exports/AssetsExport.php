@@ -3,16 +3,15 @@
 namespace App\Exports;
 
 use App\Models\Asset;
-use Illuminate\Contracts\Auth\Authenticatable;
+use App\Models\User;
+use App\Services\ExcelReportService;
 use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Facades\Excel;
 
-class AssetsExport implements FromCollection, WithHeadings, WithMapping
+class AssetsExport
 {
     public function __construct(
-        protected Authenticatable $user,
+        protected User $user,
         protected ?int $branchId = null,
         protected ?int $divisionId = null,
         protected ?int $sectionId = null,
@@ -23,7 +22,46 @@ class AssetsExport implements FromCollection, WithHeadings, WithMapping
         protected ?string $to = null,
     ) {}
 
-    public function collection()
+    /**
+     * Generate and download the Excel file
+     */
+    public function download(string $filename = null): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $assets = $this->getAssets();
+        $filename = $filename ?: 'assets-export-' . now()->format('Y-m-d-His') . '.xlsx';
+
+        // Define column mapping for the Excel export
+        $columns = [
+            'property_number' => 'Item Code',
+            'description' => 'Item Name', 
+            'category.name' => 'Category',
+            'quantity' => 'Quantity',
+            'unit' => 'Unit',
+            'location' => 'Location',
+            'date_acquired' => 'Date Acquired',
+            'status' => 'Status'
+        ];
+
+        // Create the Excel report service with enhanced formatting
+        $excelService = new ExcelReportService(
+            $assets,
+            $columns,
+            'Quezon City Public Library - Assets Report',
+            [
+                'exported_by' => $this->user->name,
+                'department' => optional($this->user->currentBranch)->name ?? 'Main Branch',
+                'date_exported' => now()->format('F j, Y g:i A'),
+                'filters' => $this->getAppliedFilters()
+            ]
+        );
+
+        return Excel::download($excelService, $filename);
+    }
+
+    /**
+     * Get assets based on applied filters
+     */
+    protected function getAssets()
     {
         $q = Asset::with(['category','currentBranch','currentDivision','currentSection'])
             ->forUser($this->user);
@@ -43,32 +81,48 @@ class AssetsExport implements FromCollection, WithHeadings, WithMapping
         if ($this->from) $q->whereDate('date_acquired', '>=', Carbon::parse($this->from));
         if ($this->to) $q->whereDate('date_acquired', '<=', Carbon::parse($this->to));
 
-        return $q->orderBy('property_number')->get();
+        return $q->orderBy('property_number')->get()->map(function ($asset) {
+            // Transform the asset data for Excel export
+            return [
+                'property_number' => $asset->property_number,
+                'description' => $asset->description,
+                'category' => ['name' => optional($asset->category)->name ?? 'Uncategorized'],
+                'quantity' => $asset->quantity,
+                'unit' => $asset->unit ?? 'pcs',
+                'location' => $this->getAssetLocation($asset),
+                'date_acquired' => $asset->date_acquired,
+                'status' => ucfirst($asset->status),
+            ];
+        });
     }
 
-    public function headings(): array
+    /**
+     * Get formatted location string for asset
+     */
+    protected function getAssetLocation($asset): string
     {
-        return [
-            'Property Number','Description','Category','Quantity','Unit Cost','Total Cost','Status','Source',
-            'Date Acquired','Branch','Division','Section'
-        ];
-    }
-
-    public function map($asset): array
-    {
-        return [
-            $asset->property_number,
-            $asset->description,
-            optional($asset->category)->name,
-            $asset->quantity,
-            number_format((float)$asset->unit_cost, 2, '.', ''),
-            number_format((float)$asset->total_cost, 2, '.', ''),
-            $asset->status,
-            $asset->source,
-            optional($asset->date_acquired)?->format('Y-m-d'),
+        $parts = array_filter([
             optional($asset->currentBranch)->name,
             optional($asset->currentDivision)->name,
             optional($asset->currentSection)->name,
-        ];
+        ]);
+        return implode(' > ', $parts) ?: 'Not Assigned';
+    }
+
+    /**
+     * Get summary of applied filters
+     */
+    protected function getAppliedFilters(): string
+    {
+        $filters = [];
+        if ($this->branchId) $filters[] = "Branch: {$this->branchId}";
+        if ($this->categoryId) $filters[] = "Category: {$this->categoryId}";
+        if ($this->status) $filters[] = "Status: {$this->status}";
+        if ($this->search) $filters[] = "Search: {$this->search}";
+        if ($this->from || $this->to) {
+            $dateRange = ($this->from ?: 'earliest') . ' to ' . ($this->to ?: 'latest');
+            $filters[] = "Date: {$dateRange}";
+        }
+        return implode(', ', $filters) ?: 'None';
     }
 }
