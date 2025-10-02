@@ -2,20 +2,46 @@ import ApexCharts from 'apexcharts';
 
 let charts = {};
 
-function createLine(el, labels, series) {
+function createLine(el, labels = [], series = []) {
   if (charts.line) charts.line.destroy();
+  
+  // Ensure we have valid data
+  if (!Array.isArray(series) || series.length === 0) {
+    console.warn('No series data provided for line chart, using zeros');
+    series = new Array(labels.length || 12).fill(0);
+  }
+  
+  // Ensure series and labels have same length
+  if (labels.length !== series.length) {
+    console.warn('Labels and series length mismatch', {labels: labels.length, series: series.length});
+    const maxLength = Math.max(labels.length, series.length);
+    while (labels.length < maxLength) labels.push(`Month ${labels.length + 1}`);
+    while (series.length < maxLength) series.push(0);
+  }
+  
+  console.log('Creating line chart with:', {
+    labels: labels,
+    series: series,
+    max: Math.max(...series),
+    hasNonZero: series.some(val => val > 0)
+  });
+  
   const options = {
     chart: { 
-      type: 'line', 
+      type: 'area', // Changed to area chart for better fill support
       height: 250, 
       toolbar: { show: false },
-      fontFamily: 'Inter, system-ui, sans-serif'
+      fontFamily: 'Inter, system-ui, sans-serif',
+      zoom: { enabled: false },
+      dropShadow: {
+        enabled: false
+      }
     },
     series: [{ 
       name: 'New Supplies', 
-      data: series,
-      color: '#3b82f6'
+      data: series
     }],
+    colors: ['#3b82f6'],
     xaxis: { 
       categories: labels,
       labels: {
@@ -23,13 +49,16 @@ function createLine(el, labels, series) {
       }
     },
     yaxis: {
+      min: 0, // Ensure chart starts at 0
+      forceNiceScale: true,
       labels: {
         style: { fontSize: '12px', colors: '#6b7280' }
       }
     },
     stroke: { 
       curve: 'smooth',
-      width: 3
+      width: 4,
+      colors: ['#3b82f6']
     },
     fill: {
       type: 'gradient',
@@ -39,21 +68,50 @@ function createLine(el, labels, series) {
         shadeIntensity: 0.3,
         gradientToColors: ['#93c5fd'],
         inverseColors: false,
-        opacityFrom: 0.8,
-        opacityTo: 0.1,
+        opacityFrom: 0.4,
+        opacityTo: 0.0,
+        stops: [0, 100]
+      }
+    },
+    markers: {
+      size: 6,
+      colors: ['#3b82f6'],
+      strokeColors: '#ffffff',
+      strokeWidth: 2,
+      hover: {
+        size: 8
       }
     },
     grid: {
       strokeDashArray: 3,
-      borderColor: '#e5e7eb'
+      borderColor: '#e5e7eb',
+      show: true
     },
     tooltip: { 
       theme: 'light',
       style: { fontSize: '12px' }
+    },
+    noData: {
+      text: 'No data available',
+      align: 'center',
+      verticalAlign: 'middle',
+      style: {
+        color: '#6b7280',
+        fontSize: '14px'
+      }
     }
   };
-  charts.line = new ApexCharts(el, options);
-  charts.line.render();
+  
+  try {
+    charts.line = new ApexCharts(el, options);
+    charts.line.render().then(() => {
+      console.log('Line chart rendered successfully');
+    }).catch(err => {
+      console.error('Error rendering line chart:', err);
+    });
+  } catch (error) {
+    console.error('Error creating line chart:', error);
+  }
 }
 
 function createBar(el, labels, series) {
@@ -240,8 +298,12 @@ function renderAll(payload) {
   const values = (payload.categoryValues && payload.categoryValues.length) ? payload.categoryValues : null;
 
   // Render main charts
-  console.log('Rendering line chart with:', payload.monthlyLabels, payload.monthlyAdds);
-  createLine(lineEl, payload.monthlyLabels || [], payload.monthlyAdds || []);
+  const monthlyLabels = payload.monthlyLabels || [];
+  const monthlyAdds = payload.monthlyAdds || [];
+  console.log('Rendering line chart with labels:', monthlyLabels);
+  console.log('Rendering line chart with data:', monthlyAdds);
+  console.log('Data points:', monthlyAdds.map((val, i) => `${monthlyLabels[i]}: ${val}`));
+  createLine(lineEl, monthlyLabels, monthlyAdds);
   
   console.log('Rendering bar chart with categories:', categories, 'values:', counts ?? values ?? []);
   createBar(barEl, categories, counts ?? values ?? []);
