@@ -6,6 +6,7 @@ use App\Models\Supply;
 use App\Models\Category;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 #[Layout('layouts.app')]
 class SupplyReports extends Component
@@ -42,6 +43,62 @@ class SupplyReports extends Component
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    public function exportPdf()
+    {
+        $user = auth()->user();
+        $supplies = $this->buildQuery($user)->with('category')
+            ->orderBy('supply_number')->get();
+
+        // Calculate summary data
+        $summary = [
+            'total_items' => $supplies->count(),
+            'on_hand_units' => $supplies->sum('current_stock'),
+            'on_hand_value' => $supplies->sum(function($s) { return $s->current_stock * $s->unit_cost; }),
+            'low_stock_items' => $supplies->filter(function($s) { return $s->current_stock < $s->min_stock; })->count(),
+            'by_category' => $supplies->groupBy('category_id')->map(function($group) {
+                $category = $group->first()->category;
+                return (object)[
+                    'category' => $category,
+                    'count' => $group->count(),
+                    'total_value' => $group->sum(function($s) { return $s->current_stock * $s->unit_cost; }),
+                    'total_stock' => $group->sum('current_stock')
+                ];
+            })->values()
+        ];
+
+        $data = [
+            'supplies' => $supplies,
+            'summary' => $summary,
+            'user' => $user,
+            'branch' => $user->branch,
+            'generated_at' => now(),
+            'filters' => [
+                'category' => $this->categoryFilter ? Category::find($this->categoryFilter)?->name : 'All Categories',
+                'status' => $this->statusFilter ?: 'All Status'
+            ],
+            // Add debug info
+            'total_query_items' => $supplies->count(),
+            'has_supplies' => $supplies->isNotEmpty()
+        ];
+
+        $pdf = Pdf::loadView('exports.supplies-report', $data)
+            ->setPaper('a4', 'portrait')
+            ->setOptions([
+                'defaultFont' => 'DejaVu Sans',
+                'isRemoteEnabled' => true,
+                'isHtml5ParserEnabled' => true,
+                'debugKeepTemp' => false
+            ]);
+
+        $filename = 'supplies-report-' . now()->format('Ymd-His') . '.pdf';
+        
+        return response()->streamDownload(function() use ($pdf) {
+            echo $pdf->output();
+        }, $filename, [
+            'Content-Type' => 'application/pdf',
+        ]);
     }
 
     protected function buildQuery($user)

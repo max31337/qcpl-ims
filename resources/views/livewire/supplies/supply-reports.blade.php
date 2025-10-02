@@ -9,6 +9,9 @@
             <button wire:click="exportCsv" class="inline-flex items-center rounded-md border px-3 py-2 text-sm hover:bg-accent">
                 <x-ui.icon name="download" class="mr-2 h-4 w-4" /> Export CSV
             </button>
+            <button wire:click="exportPdf" class="inline-flex items-center rounded-md bg-red-600 text-white px-3 py-2 text-sm hover:bg-red-700">
+                <x-ui.icon name="file-text" class="mr-2 h-4 w-4" /> Export PDF
+            </button>
         </div>
     </div>
 
