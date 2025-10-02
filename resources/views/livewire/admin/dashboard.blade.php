@@ -239,7 +239,7 @@
           </div>
         </div>
       </x-slot>
-      <div class="h-56 md:h-64">
+      <div class="flex items-center justify-center h-56 md:h-64">
         <div id="assetsLineChart" aria-label="Assets created over time" class="w-full h-full"></div>
       </div>
     </x-ui-card>
@@ -256,7 +256,7 @@
           </div>
         </div>
       </x-slot>
-      <div class="h-56 md:h-64">
+      <div class="flex items-center justify-center h-56 md:h-64">
         <div id="suppliesBarChart" aria-label="Supplies stock health" class="w-full h-full"></div>
       </div>
     </x-ui-card>
@@ -281,8 +281,8 @@
           </div>
         </div>
       </x-slot>
-      <div class="flex flex-col items-center gap-3">
-        <div class="flex-shrink-0">
+      <div class="flex flex-col items-center justify-center gap-4">
+        <div class="flex items-center justify-center">
           <!-- Larger donut for better visibility -->
           <div id="assetsDonutChart" aria-label="Assets by status" class="w-56 h-56"></div>
         </div>

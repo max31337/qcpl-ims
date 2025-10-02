@@ -337,6 +337,21 @@ class ActivityLog extends Model
             return '(empty)';
         }
 
+        // Handle arrays early
+        if (is_array($value)) {
+            // Handle specific array fields
+            if (in_array($field, ['tags', 'categories', 'specifications'])) {
+                return implode(', ', $value);
+            }
+            // For other arrays, return formatted JSON
+            return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        }
+
+        // Handle objects
+        if (is_object($value)) {
+            return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        }
+
         // Handle different field types
         switch ($field) {
             case 'status':

@@ -12,13 +12,37 @@ function createLineChart(el, labels = [], data = []) {
     chart: { type: 'line', height: '100%', toolbar: { show: false } },
     series: [{ name: 'Assets created', data }],
     xaxis: { categories: labels },
-    stroke: { curve: 'smooth', width: 2 },
+    stroke: { curve: 'smooth', width: 3 },
     colors: ['#3b82f6'],
-    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.1 } },
-    markers: { size: 4, strokeWidth: 2, strokeColors: '#ffffff' },
+    fill: { 
+      type: 'gradient', 
+      gradient: { 
+        shade: 'light',
+        type: 'vertical',
+        shadeIntensity: 0.5, 
+        gradientToColors: ['#93c5fd'], 
+        opacityFrom: 0.4, 
+        opacityTo: 0.1 
+      } 
+    },
+    markers: { 
+      size: 5, 
+      colors: ['#3b82f6'],
+      strokeWidth: 2, 
+      strokeColors: '#ffffff',
+      hover: { size: 7 }
+    },
     grid: { strokeDashArray: 4 },
     tooltip: { theme: 'dark' },
-    legend: { show: false }
+    legend: { show: false },
+    yaxis: { 
+      min: 0,
+      labels: { 
+        formatter: function (val) {
+          return Math.floor(val);
+        }
+      }
+    }
   };
   assetsLineChart = new ApexCharts(el, options);
   assetsLineChart.render();
