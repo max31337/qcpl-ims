@@ -80,13 +80,6 @@ new class extends Component
 
     <!-- Filters Card -->
     <x-ui-card>
-        <!-- Debug: Show current filter values -->
-        @if(app()->environment('local'))
-            <div class="p-2 bg-gray-100 text-xs mb-2">
-                Debug - Search: "{{ $search }}" | Category: "{{ $category }}" | Status: "{{ $status }}"
-            </div>
-        @endif
-        
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div class="flex-1 flex items-center gap-3">
                 <x-ui.input wire:model.live.debounce.300ms="search" placeholder="Search supplies (name, number, SKU)" />
