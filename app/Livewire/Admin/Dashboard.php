@@ -26,8 +26,8 @@ class Dashboard extends Component
     public function render()
     {
         $user = Auth::user();
-        // Simple cache key - no filters in dashboard
-        $key = 'admin_dash_v4_simple';
+        // User-specific cache key to prevent data leakage between roles
+        $key = 'admin_dash_v4_user_' . $user->id . '_role_' . $user->role . '_branch_' . $user->branch_id;
         $data = Cache::remember($key, 600, function () use ($user) {
             // Simple queries without complex scoping for dashboard overview
             $assetsQuery = Asset::query();
@@ -48,7 +48,11 @@ class Dashboard extends Component
             $totalAssets = (clone $assetsQuery)->count();
             $assetsValue = (clone $assetsQuery)->sum(DB::raw('COALESCE(assets.total_cost, 0)'));
             $supplySkus = (clone $suppliesQuery)->count();
-            $lowStock = (clone $suppliesQuery)->whereColumn('current_stock','<','min_stock')->count();
+            // Use proper forUser scope for accurate data
+            $lowStock = Supply::forUser($user)
+                ->where('current_stock', '>', 0)
+                ->whereColumn('current_stock', '<', 'min_stock')
+                ->count();
             $suppliesValue = (clone $suppliesQuery)->selectRaw('SUM(current_stock*unit_cost) v')->value('v') ?? 0;
 
             // Monthly assets created (last 12 months, up to end of selected 'to' month)
@@ -149,13 +153,13 @@ class Dashboard extends Component
                 ->limit(6)
                 ->get();
 
-            // Supplies stock health buckets
-            $stockOut = (clone $suppliesQuery)->where('current_stock', '<=', 0)->count();
-            $stockLow = (clone $suppliesQuery)
+            // Supplies stock health buckets - use forUser scope for proper data scoping
+            $stockOut = Supply::forUser($user)->where('current_stock', '<=', 0)->count();
+            $stockLow = Supply::forUser($user)
                 ->where('current_stock', '>', 0)
                 ->whereColumn('current_stock', '<', 'min_stock')
                 ->count();
-            $stockOk = (clone $suppliesQuery)
+            $stockOk = Supply::forUser($user)
                 ->whereColumn('current_stock', '>=', 'min_stock')
                 ->count();
 
