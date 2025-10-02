@@ -217,10 +217,7 @@
     </x-ui-card>
 
     <x-ui-card>
-      <div class="flex items-center justify-between mb-2">
-        <h4 class="text-sm font-medium">Stale SKUs (90+ days)</h4>
-        <div class="text-xs text-muted-foreground">{{ number_format($staleSkusCount ?? 0) }} items</div>
-      </div>
+
       @php
         // Direct query for stale SKUs (90+ days)
         $staleThreshold = now()->subDays(90);
