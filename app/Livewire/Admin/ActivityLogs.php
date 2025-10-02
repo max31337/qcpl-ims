@@ -7,6 +7,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Layout;
 use App\Models\ActivityLog;
 use App\Models\User;
+use App\Exports\ActivityLogsExport;
 use Carbon\Carbon;
 
 #[Layout('layouts.app')]
@@ -102,10 +103,28 @@ class ActivityLogs extends Component
 
     public function exportLogs()
     {
-        // Log the export action
-        ActivityLog::log('export', null, [], [], 'Exported activity logs');
+        try {
+            // Create the export with current filters
+            $export = new ActivityLogsExport(
+                user: auth()->user(),
+                search: $this->search,
+                userFilter: $this->userFilter,
+                actionFilter: $this->actionFilter,
+                modelFilter: $this->modelFilter,
+                dateFrom: $this->dateFromFilter,
+                dateTo: $this->dateToFilter,
+            );
 
-        session()->flash('success', 'Activity logs exported successfully.');
+            // Log the export action
+            ActivityLog::log('export', null, [], [], 'Exported activity logs with filters applied');
+
+            // Generate and download the file
+            return $export->download();
+
+        } catch (\Exception $e) {
+            session()->flash('error', 'Failed to export activity logs: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function showDetails($logId)
