@@ -23,6 +23,16 @@ class ActivityLogs extends Component
     public $dateToFilter = '';
     public $perPage = 25;
     
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'userFilter' => ['except' => ''],
+        'actionFilter' => ['except' => ''],
+        'modelFilter' => ['except' => ''],
+        'dateFromFilter' => ['except' => ''],
+        'dateToFilter' => ['except' => ''],
+        'page' => ['except' => 1],
+    ];
+    
     // Modal properties
     public $showModal = false;
     public $selectedLog = null;

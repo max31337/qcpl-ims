@@ -21,6 +21,15 @@ class TransferHistories extends Component
     public $sortDirection = 'desc';
     public $perPage = 25;
 
+    protected $queryString = [
+        'search' => ['except' => ''],
+        'fromDate' => ['except' => ''],
+        'toDate' => ['except' => ''],
+        'sortBy' => ['except' => 'transfer_date'],
+        'sortDirection' => ['except' => 'desc'],
+        'page' => ['except' => 1],
+    ];
+
     public function mount()
     {
         // Default to last 30 days
