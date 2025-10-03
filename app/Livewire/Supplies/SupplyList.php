@@ -28,6 +28,14 @@ class SupplyList extends Component
         }
     }
 
+    public function clearFilters()
+    {
+        $this->search = '';
+        $this->status = '';
+        $this->category = '';
+        $this->resetPage();
+    }
+
     public function render()
     {
         $user = auth()->user();
