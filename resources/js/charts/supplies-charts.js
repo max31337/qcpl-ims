@@ -350,26 +350,31 @@ function renderAll(payload) {
   }
 }
 
-// Listen for Livewire/browser events
-window.addEventListener('supplyAnalytics:update', (e) => {
-  if (e && e.detail) renderAll(e.detail);
-});
+// Check if supply analytics page is using inline scripts
+const hasInlineSupplyCharts = document.querySelector('script[data-supply-analytics-inline]') !== null;
 
-// Also support a dashboard-scoped event
-window.addEventListener('supplyDashboard:update', (e) => {
-  if (e && e.detail) renderAll(e.detail);
-});
-
-// If server embedded a payload before module loaded
-if (window.__supply_analytics_payload) renderAll(window.__supply_analytics_payload);
-if (window.__supply_dashboard_payload) renderAll(window.__supply_dashboard_payload);
-
-// Re-render after Livewire updates if needed
-if (window.Livewire && window.Livewire.hook) {
-  window.Livewire.hook('message.processed', (message, component) => {
-    // Look for last payload on DOM
-    if (window.__supply_analytics_payload) renderAll(window.__supply_analytics_payload);
+if (!hasInlineSupplyCharts) {
+  // Listen for Livewire/browser events only if no inline scripts
+  window.addEventListener('supplyAnalytics:update', (e) => {
+    if (e && e.detail) renderAll(e.detail);
   });
+
+  // Also support a dashboard-scoped event
+  window.addEventListener('supplyDashboard:update', (e) => {
+    if (e && e.detail) renderAll(e.detail);
+  });
+
+  // If server embedded a payload before module loaded
+  if (window.__supply_analytics_payload) renderAll(window.__supply_analytics_payload);
+  if (window.__supply_dashboard_payload) renderAll(window.__supply_dashboard_payload);
+
+  // Re-render after Livewire updates if needed
+  if (window.Livewire && window.Livewire.hook) {
+    window.Livewire.hook('message.processed', (message, component) => {
+      // Look for last payload on DOM
+      if (window.__supply_analytics_payload) renderAll(window.__supply_analytics_payload);
+    });
+  }
 }
 
 export default { renderAll };

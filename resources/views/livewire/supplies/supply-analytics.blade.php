@@ -72,7 +72,8 @@
                 </x-ui-card>
             </div>
 
-            <script>
+            <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
+            <script data-supply-analytics-inline>
                 // Embed initial payload so the chart module can render immediately if it loads after the event
                 window.__supply_analytics_payload = {!! json_encode([
                     'categories' => array_column($suppliesByCategory ?? [], 'category'),
@@ -90,6 +91,244 @@
                     'agingLabels' => $agingBuckets['labels'] ?? ['≤30d','31-60d','61-90d','>90d'],
                     'agingCounts' => $agingBuckets['counts'] ?? [0,0,0,0],
                 ]) !!};
+
+                // Store chart instances
+                let supplyChartInstances = {};
+
+                // Chart creation functions
+                function createLineChart(elementId, labels, data, title) {
+                    const element = document.getElementById(elementId);
+                    if (!element) return null;
+
+                    // Clean up existing chart
+                    if (supplyChartInstances[elementId]) {
+                        supplyChartInstances[elementId].destroy();
+                        delete supplyChartInstances[elementId];
+                    }
+                    element.innerHTML = '';
+
+                    const options = {
+                        chart: {
+                            type: 'line',
+                            height: 250,
+                            toolbar: { show: false }
+                        },
+                        series: [{
+                            name: title,
+                            data: data
+                        }],
+                        xaxis: {
+                            categories: labels,
+                            labels: { style: { fontSize: '11px' } }
+                        },
+                        colors: ['#10b981'],
+                        stroke: { curve: 'smooth', width: 3 },
+                        dataLabels: { enabled: false },
+                        grid: { strokeDashArray: 4 }
+                    };
+
+                    supplyChartInstances[elementId] = new ApexCharts(element, options);
+                    supplyChartInstances[elementId].render();
+                    return supplyChartInstances[elementId];
+                }
+
+                function createBarChart(elementId, categories, values, title) {
+                    const element = document.getElementById(elementId);
+                    if (!element) return null;
+
+                    // Clean up existing chart
+                    if (supplyChartInstances[elementId]) {
+                        supplyChartInstances[elementId].destroy();
+                        delete supplyChartInstances[elementId];
+                    }
+                    element.innerHTML = '';
+
+                    const options = {
+                        chart: {
+                            type: 'bar',
+                            height: 250,
+                            toolbar: { show: false }
+                        },
+                        series: [{
+                            name: title,
+                            data: values
+                        }],
+                        xaxis: {
+                            categories: categories,
+                            labels: { style: { fontSize: '11px' } }
+                        },
+                        colors: ['#3b82f6'],
+                        dataLabels: { enabled: false },
+                        grid: { strokeDashArray: 4 }
+                    };
+
+                    supplyChartInstances[elementId] = new ApexCharts(element, options);
+                    supplyChartInstances[elementId].render();
+                    return supplyChartInstances[elementId];
+                }
+
+                function createDonutChart(elementId, labels, values, colors) {
+                    const element = document.getElementById(elementId);
+                    if (!element) return null;
+
+                    // Clean up existing chart
+                    if (supplyChartInstances[elementId]) {
+                        supplyChartInstances[elementId].destroy();
+                        delete supplyChartInstances[elementId];
+                    }
+                    element.innerHTML = '';
+
+                    const options = {
+                        chart: {
+                            type: 'donut',
+                            height: 250,
+                            toolbar: { show: false }
+                        },
+                        series: values,
+                        labels: labels,
+                        colors: colors,
+                        legend: { position: 'bottom' },
+                        dataLabels: {
+                            enabled: true,
+                            style: { fontSize: '11px' }
+                        },
+                        plotOptions: {
+                            pie: {
+                                donut: { size: '50%' }
+                            }
+                        }
+                    };
+
+                    supplyChartInstances[elementId] = new ApexCharts(element, options);
+                    supplyChartInstances[elementId].render();
+                    return supplyChartInstances[elementId];
+                }
+
+                function createStackedBarChart(elementId, categories, series) {
+                    const element = document.getElementById(elementId);
+                    if (!element) return null;
+
+                    // Clean up existing chart
+                    if (supplyChartInstances[elementId]) {
+                        supplyChartInstances[elementId].destroy();
+                        delete supplyChartInstances[elementId];
+                    }
+                    element.innerHTML = '';
+
+                    const options = {
+                        chart: {
+                            type: 'bar',
+                            height: 250,
+                            stacked: true,
+                            toolbar: { show: false }
+                        },
+                        series: series,
+                        xaxis: {
+                            categories: categories,
+                            labels: { style: { fontSize: '11px' } }
+                        },
+                        colors: ['#f59e0b', '#ef4444'],
+                        dataLabels: { enabled: false },
+                        legend: { position: 'top' }
+                    };
+
+                    supplyChartInstances[elementId] = new ApexCharts(element, options);
+                    supplyChartInstances[elementId].render();
+                    return supplyChartInstances[elementId];
+                }
+
+                function createPieChart(elementId, labels, values, colors) {
+                    const element = document.getElementById(elementId);
+                    if (!element) return null;
+
+                    // Clean up existing chart
+                    if (supplyChartInstances[elementId]) {
+                        supplyChartInstances[elementId].destroy();
+                        delete supplyChartInstances[elementId];
+                    }
+                    element.innerHTML = '';
+
+                    const options = {
+                        chart: {
+                            type: 'pie',
+                            height: 250,
+                            toolbar: { show: false }
+                        },
+                        series: values,
+                        labels: labels,
+                        colors: colors,
+                        legend: { position: 'bottom' },
+                        dataLabels: {
+                            enabled: true,
+                            style: { fontSize: '11px' }
+                        }
+                    };
+
+                    supplyChartInstances[elementId] = new ApexCharts(element, options);
+                    supplyChartInstances[elementId].render();
+                    return supplyChartInstances[elementId];
+                }
+
+                // Initialize all charts
+                function initializeSupplyCharts() {
+                    const payload = window.__supply_analytics_payload;
+                    
+                    // Monthly Additions Line Chart
+                    if (payload.monthlyLabels && payload.monthlyAdds) {
+                        createLineChart('supply-monthly-line', payload.monthlyLabels, payload.monthlyAdds, 'Monthly Additions');
+                    }
+
+                    // Categories Bar Chart
+                    if (payload.categories && payload.categoryCounts) {
+                        createBarChart('supply-categories-bar', payload.categories, payload.categoryCounts, 'Supplies by Category');
+                    }
+
+                    // Stock Health Donut Chart
+                    if (payload.stockHealth) {
+                        const stockLabels = ['OK', 'Low Stock', 'Out of Stock'];
+                        const stockValues = [payload.stockHealth.ok || 0, payload.stockHealth.low || 0, payload.stockHealth.out || 0];
+                        const stockColors = ['#10b981', '#f59e0b', '#ef4444'];
+                        createDonutChart('supply-stock-donut', stockLabels, stockValues, stockColors);
+                    }
+
+                    // Low vs Out Stacked Bar Chart
+                    if (payload.lowVsOutCategories) {
+                        const series = [
+                            { name: 'Low Stock', data: payload.lowSeries || [] },
+                            { name: 'Out of Stock', data: payload.outSeries || [] }
+                        ];
+                        createStackedBarChart('supply-lowout-stacked', payload.lowVsOutCategories, series);
+                    }
+
+                    // Top SKUs Bar Chart
+                    if (payload.topSkuLabels && payload.topSkuValues) {
+                        createBarChart('supply-topskus-bar', payload.topSkuLabels, payload.topSkuValues, 'Top SKUs Value');
+                    }
+
+                    // Aging Pie Chart
+                    if (payload.agingLabels && payload.agingCounts) {
+                        const agingColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444'];
+                        createPieChart('supply-aging-pie', payload.agingLabels, payload.agingCounts, agingColors);
+                    }
+                }
+
+                // Flag to prevent multiple initializations
+                window._supplyChartsInitialized = window._supplyChartsInitialized || false;
+
+                function initializeSupplyChartsOnce() {
+                    if (window._supplyChartsInitialized) return;
+                    window._supplyChartsInitialized = true;
+                    
+                    console.log('Initializing supply charts...');
+                    setTimeout(initializeSupplyCharts, 100);
+                }
+
+                // Initialize charts when DOM is ready
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initializeSupplyChartsOnce);
+                } else {
+                    initializeSupplyChartsOnce();
+                }
             </script>
     </x-ui-card>
 </div>

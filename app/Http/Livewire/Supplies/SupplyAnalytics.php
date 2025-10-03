@@ -141,23 +141,7 @@ class SupplyAnalytics extends Component
         else $this->agingBuckets['counts'][3]++;
     }
 
-    // Emit Livewire v3 browser event with named detail keys
-    $this->dispatch('supplyAnalytics:update',
-        categories: array_column($this->suppliesByCategory, 'category'),
-        categoryCounts: array_column($this->suppliesByCategory, 'count'),
-        categoryValues: array_column($this->suppliesByCategory, 'value'),
-        monthlyLabels: $months->map(fn($m) => date('M Y', strtotime($m.'-01')))->all(),
-        monthlyAdds: $this->monthlyAdds,
-        stockHealth: $this->stockHealth,
-        // Extended payload
-        lowVsOutCategories: array_map(fn($r) => $r['name'], $this->lowVsOutByCategory),
-        lowSeries: array_map(fn($r) => $r['low'], $this->lowVsOutByCategory),
-        outSeries: array_map(fn($r) => $r['out'], $this->lowVsOutByCategory),
-        topSkuLabels: array_map(fn($r) => $r['label'], $this->topOnHandSkus),
-        topSkuValues: array_map(fn($r) => $r['value'], $this->topOnHandSkus),
-        agingLabels: $this->agingBuckets['labels'],
-        agingCounts: $this->agingBuckets['counts'],
-    );
+    // Note: Charts are initialized via embedded payload instead of event dispatch
     }
 
     public function render()
