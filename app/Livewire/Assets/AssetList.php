@@ -154,6 +154,10 @@ class AssetList extends Component
 
     public function openEditModal($assetId)
     {
+        // Close any other open modals first
+        $this->showGroupModal = false;
+        $this->showDetailsModal = false;
+        
         $this->resetForm();
         $this->editingAsset = Asset::findOrFail($assetId);
         $this->modalTitle = 'Edit Asset';
@@ -404,6 +408,11 @@ class AssetList extends Component
 
     public function transfer($assetId)
     {
+        // Close any open modals before redirecting
+        $this->showGroupModal = false;
+        $this->showDetailsModal = false;
+        $this->showModal = false;
+        
         return redirect()->route('assets.transfer', $assetId);
     }
 
