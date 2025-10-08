@@ -1,8 +1,8 @@
 <div class="space-y-8">
     <!-- Page Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-xl p-6 text-white shadow-lg">
-        <h1 class="text-2xl font-bold mb-2">Supply Officer Dashboard</h1>
-        <p class="text-blue-100">Monitor inventory levels, track movements, and analyze supply trends</p>
+    <div class="bg-white rounded-xl p-6 text-black shadow-lg">
+        <h1 class="text-2xl font-bold mb-2">Supply Officer Analytics</h1>
+        <p class="text-muted-foreground">Monitor inventory levels, track movements, and analyze supply trends</p>
     </div>
 
     <!-- KPI Cards -->
