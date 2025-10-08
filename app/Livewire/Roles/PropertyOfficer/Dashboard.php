@@ -13,17 +13,37 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class Dashboard extends Component
 {
+    public bool $showMainLibraryOnly = false;
+
+    public function toggleScope()
+    {
+        $this->showMainLibraryOnly = !$this->showMainLibraryOnly;
+        
+        // Clear the cache for both scope states to force refresh
+        $user = Auth::user();
+        $mainKey = 'property_officer_dash_v2_user_' . $user->id . '_branch_' . $user->branch_id . '_scope_main';
+        $allKey = 'property_officer_dash_v2_user_' . $user->id . '_branch_' . $user->branch_id . '_scope_all';
+        
+        Cache::forget($mainKey);
+        Cache::forget($allKey);
+        
+        // Dispatch browser event to update charts
+        $this->dispatch('property-dashboard-updated');
+    }
+
     public function render()
     {
         $user = Auth::user();
         
-        $key = 'property_officer_dash_v1_user_' . $user->id . '_branch_' . $user->branch_id;
-        $data = Cache::remember($key, 600, function () use ($user) {
+        $scope = $this->showMainLibraryOnly ? 'main' : 'all';
+        $showMainLibraryOnly = $this->showMainLibraryOnly; // Capture for closure
+        $key = 'property_officer_dash_v2_user_' . $user->id . '_branch_' . $user->branch_id . '_scope_' . $scope;
+        $data = Cache::remember($key, 600, function () use ($user, $showMainLibraryOnly) {
             $assetsQuery = Asset::query();
             $transfers = AssetTransferHistory::query();
             
-            // Basic user scoping - only restrict if not main branch admin
-            if (!$user->isMainBranch()) {
+            // Apply scoping based on toggle and user branch
+            if (!$user->isMainBranch() || $showMainLibraryOnly) {
                 $assetsQuery->where('current_branch_id', $user->branch_id);
                 $transfers->where(function ($q) use ($user) {
                     $q->where('origin_branch_id', $user->branch_id)
@@ -117,6 +137,20 @@ class Dashboard extends Component
             );
         });
 
-        return view('livewire.roles.property-officer.dashboard', $data);
+        $viewData = array_merge($data, [
+            'showMainLibraryOnly' => $this->showMainLibraryOnly,
+            'isMainBranch' => $user->isMainBranch(),
+        ]);
+
+        // Add chart data as JSON for JavaScript
+        $this->dispatch('updateChartData', [
+            'labels' => $data['monthlyLineLabels'] ?? [],
+            'assetsValues' => $data['monthlyLineValues'] ?? [],
+            'assetsByStatus' => is_object($data['assetsByStatus'] ?? null) ? ($data['assetsByStatus']->toArray()) : ($data['assetsByStatus'] ?? []),
+            'categoryLabels' => ($data['assetsByCategoryValue'] ?? collect())->pluck('name')->toArray(),
+            'categoryValues' => ($data['assetsByCategoryValue'] ?? collect())->pluck('v')->toArray(),
+        ]);
+
+        return view('livewire.roles.property-officer.dashboard', $viewData);
     }
 }

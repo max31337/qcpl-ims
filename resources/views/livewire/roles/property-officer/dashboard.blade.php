@@ -16,6 +16,25 @@
     </div>
   </div>
 
+  @if($isMainBranch)
+  <!-- Data Scope Toggle -->
+  <x-ui.card class="p-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h3 class="text-sm font-medium">Data Scope</h3>
+        <p class="text-xs text-muted-foreground">Choose whether to view data from all branches or main library only</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-sm {{ !$showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">All Branches</span>
+        <button wire:click="toggleScope" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $showMainLibraryOnly ? 'bg-blue-600' : 'bg-gray-200' }}">
+          <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $showMainLibraryOnly ? 'translate-x-5' : 'translate-x-0' }}"></span>
+        </button>
+        <span class="text-sm {{ $showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">Main Library Only</span>
+      </div>
+    </div>
+  </x-ui.card>
+  @endif
+
   <!-- Enhanced KPI Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
     <x-ui.card class="p-6">
@@ -175,7 +194,10 @@
   </x-ui.card>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
 <script>
+  let propertyChartInstances = {};
+
   // Initial dashboard payload for asset charts
   window.__property_dashboard_payload = {!! json_encode([
     'labels' => $monthlyLineLabels ?? [],
@@ -185,6 +207,107 @@
     'categoryValues' => ($assetsByCategoryValue ?? collect())->pluck('v')->toArray(),
   ], JSON_UNESCAPED_UNICODE) !!};
 
-  // Dispatch event for charts to initialize
-  window.dispatchEvent(new CustomEvent('propertyDashboard:update', { detail: window.__property_dashboard_payload }));
+  function createPropertyChart(elementId, options) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    if (propertyChartInstances[elementId]) {
+      propertyChartInstances[elementId].destroy();
+    }
+    
+    propertyChartInstances[elementId] = new ApexCharts(element, options);
+    propertyChartInstances[elementId].render();
+  }
+
+  function initializePropertyCharts(data) {
+    // Monthly Assets Line Chart
+    if (data.labels && data.assetsValues) {
+      createPropertyChart('assets-monthly-line', {
+        chart: { type: 'line', height: 250, toolbar: { show: false } },
+        series: [{ name: 'Assets Added', data: data.assetsValues }],
+        xaxis: { categories: data.labels },
+        stroke: { curve: 'smooth', width: 3 },
+        colors: ['#3b82f6'],
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shade: 'dark',
+            gradientToColors: ['#1d4ed8'],
+            shadeIntensity: 1,
+            type: 'horizontal'
+          }
+        }
+      });
+    }
+
+    // Assets by Status Donut Chart
+    if (data.assetsByStatus && Object.keys(data.assetsByStatus).length > 0) {
+      const statusData = Object.values(data.assetsByStatus);
+      const statusLabels = Object.keys(data.assetsByStatus);
+      
+      createPropertyChart('assets-status-donut', {
+        chart: { type: 'donut', height: 200 },
+        series: statusData,
+        labels: statusLabels.map(s => s.charAt(0).toUpperCase() + s.slice(1)),
+        colors: ['#10b981', '#f59e0b', '#ef4444'],
+        legend: { show: false },
+        plotOptions: {
+          pie: {
+            donut: {
+              size: '70%'
+            }
+          }
+        }
+      });
+    }
+
+    // Assets by Category Bar Chart
+    if (data.categoryLabels && data.categoryValues && data.categoryLabels.length > 0) {
+      createPropertyChart('assets-category-bar', {
+        chart: { type: 'bar', height: 250, toolbar: { show: false } },
+        series: [{ name: 'Value (₱)', data: data.categoryValues }],
+        xaxis: { categories: data.categoryLabels },
+        colors: ['#8b5cf6'],
+        plotOptions: {
+          bar: {
+            horizontal: false,
+            borderRadius: 4
+          }
+        },
+        yaxis: {
+          labels: {
+            formatter: function (value) {
+              return '₱' + new Intl.NumberFormat('en-PH').format(value);
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Initialize charts on page load
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+      initializePropertyCharts(window.__property_dashboard_payload);
+    }, 100);
+  });
+
+  // Listen for dashboard updates (for Livewire refreshes)
+  window.addEventListener('propertyDashboard:update', function(event) {
+    initializePropertyCharts(event.detail);
+  });
+
+  // Listen for Livewire events
+  document.addEventListener('livewire:init', function () {
+    Livewire.on('property-dashboard-updated', function () {
+      // Wait a moment for the component to re-render, then update charts
+      setTimeout(() => {
+        initializePropertyCharts(window.__property_dashboard_payload);
+      }, 100);
+    });
+
+    Livewire.on('updateChartData', function (data) {
+      initializePropertyCharts(data[0]); // Livewire passes arrays
+    });
+  });
 </script>

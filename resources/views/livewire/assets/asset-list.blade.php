@@ -98,14 +98,16 @@
 
             @php $user = auth()->user(); @endphp
             @if($user->isMainBranch() && $user->isPropertyOfficer() && count($branches) > 1)
-            {{-- Property officer at main library gets simplified view filter --}}
+            {{-- Property officer at main library gets toggle --}}
             <div>
-                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">View Scope</label>
-                <select wire:model.live="branchFilter"
-                        class="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
-                    <option value="">All Branches</option>
-                    <option value="{{ $user->branch_id }}">Main Library Only</option>
-                </select>
+                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">View Scope</label>
+                <div class="mt-1.5 flex items-center gap-3 p-2 border border-input rounded-md bg-background">
+                    <span class="text-sm {{ !$showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">All Branches</span>
+                    <button wire:click="toggleScope" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $showMainLibraryOnly ? 'bg-blue-600' : 'bg-gray-200' }}">
+                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $showMainLibraryOnly ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                    </button>
+                    <span class="text-sm {{ $showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">Main Library Only</span>
+                </div>
             </div>
             @elseif(count($branches) > 1)
             {{-- Other users get standard branch filter --}}
@@ -127,7 +129,7 @@
                 Showing {{ $groups->count() }} of {{ $groups->total() }} groups
             </p>
             
-            @if($search || $categoryFilter || $statusFilter || $branchFilter || $recentFilter)
+            @if($search || $categoryFilter || $statusFilter || $branchFilter || $recentFilter || $showMainLibraryOnly)
                 <x-ui.button wire:click="resetFilters" variant="outline" size="sm">
                     <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18"/>
@@ -336,13 +338,13 @@
             </div>
             <h3 class="mt-4 text-lg font-semibold">No assets found</h3>
             <p class="mb-4 mt-2 text-sm text-muted-foreground">
-                @if($search || $categoryFilter || $statusFilter || $branchFilter)
+                @if($search || $categoryFilter || $statusFilter || $branchFilter || $showMainLibraryOnly)
                     No assets match your current filters. Try adjusting your search criteria.
                 @else
                     Get started by adding your first asset to the system.
                 @endif
             </p>
-            @if($search || $categoryFilter || $statusFilter || $branchFilter)
+            @if($search || $categoryFilter || $statusFilter || $branchFilter || $showMainLibraryOnly)
                 <x-ui.button wire:click="resetFilters" variant="outline">Clear Filters</x-ui.button>
             @else
                 <x-ui.button wire:click="openCreateModal">Add Your First Asset</x-ui.button>

@@ -23,7 +23,7 @@ class AssetPolicy
     public function view(User $user, Asset $asset): bool
     {
         // Users can view assets based on branch access
-        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver())) {
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver() || $user->isPropertyOfficer())) {
             return true; // Can see all assets
         }
         
@@ -46,6 +46,11 @@ class AssetPolicy
     {
         // Admin can update any asset
         if ($user->isAdmin()) {
+            return true;
+        }
+        
+        // Main library property officers can update any asset (global access)
+        if ($user->isPropertyOfficer() && $user->isMainBranch()) {
             return true;
         }
         
@@ -73,6 +78,11 @@ class AssetPolicy
     {
         // Admin can transfer any asset
         if ($user->isAdmin()) {
+            return true;
+        }
+        
+        // Main library property officers can transfer any asset (global access)
+        if ($user->isPropertyOfficer() && $user->isMainBranch()) {
             return true;
         }
         

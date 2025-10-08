@@ -12,39 +12,64 @@ use Livewire\Attributes\Layout;
 #[Layout('layouts.app')]
 class Dashboard extends Component
 {
+    public bool $showMainLibraryOnly = false;
+
+    public function toggleScope()
+    {
+        $this->showMainLibraryOnly = !$this->showMainLibraryOnly;
+        
+        // Clear the cache for both scope states to force refresh
+        $user = Auth::user();
+        $mainKey = 'supply_officer_dash_v2_user_' . $user->id . '_branch_' . $user->branch_id . '_scope_main';
+        $allKey = 'supply_officer_dash_v2_user_' . $user->id . '_branch_' . $user->branch_id . '_scope_all';
+        
+        Cache::forget($mainKey);
+        Cache::forget($allKey);
+    }
+
     public function render()
     {
         $user = Auth::user();
         
-        $key = 'supply_officer_dash_v1_user_' . $user->id . '_branch_' . $user->branch_id;
-        $data = Cache::remember($key, 600, function () use ($user) {
-            // Use proper forUser scope for accurate data
-            $supplySkus = Supply::forUser($user)->count();
+        $scope = $this->showMainLibraryOnly ? 'main' : 'all';
+        $showMainLibraryOnly = $this->showMainLibraryOnly; // Capture for closure
+        $key = 'supply_officer_dash_v2_user_' . $user->id . '_branch_' . $user->branch_id . '_scope_' . $scope;
+        $data = Cache::remember($key, 600, function () use ($user, $showMainLibraryOnly) {
+            // Create custom query based on toggle state
+            $baseQuery = function() use ($user, $showMainLibraryOnly) {
+                $query = Supply::query();
+                if (!$user->isMainBranch() || $showMainLibraryOnly) {
+                    return $query->where('branch_id', $user->branch_id);
+                }
+                return $query; // Show all branches for main library users when toggle is off
+            };
+
+            $supplySkus = $baseQuery()->count();
             
-            $lowStock = Supply::forUser($user)
+            $lowStock = $baseQuery()
                 ->where('current_stock', '>', 0)
                 ->whereColumn('current_stock', '<', 'min_stock')
                 ->count();
                 
-            $suppliesValue = Supply::forUser($user)
+            $suppliesValue = $baseQuery()
                 ->selectRaw('SUM(current_stock*unit_cost) v')
                 ->value('v') ?? 0;
                 
-            $stockOut = Supply::forUser($user)
+            $stockOut = $baseQuery()
                 ->where('current_stock', '<=', 0)
                 ->count();
                 
-            $stockLow = Supply::forUser($user)
+            $stockLow = $baseQuery()
                 ->where('current_stock', '>', 0)
                 ->whereColumn('current_stock', '<', 'min_stock')
                 ->count();
                 
-            $stockOk = Supply::forUser($user)
+            $stockOk = $baseQuery()
                 ->whereColumn('current_stock', '>=', 'min_stock')
                 ->count();
 
             // Top supply categories by value
-            $topSupplyCategories = Supply::forUser($user)
+            $topSupplyCategories = $baseQuery()
                 ->leftJoin('categories', 'supplies.category_id', '=', 'categories.id')
                 ->selectRaw("COALESCE(categories.name, 'Uncategorized') as name, SUM(current_stock*unit_cost) as v")
                 ->groupBy('categories.name')
@@ -65,7 +90,7 @@ class Dashboard extends Component
             $lineEnd = now()->endOfMonth();
             $lineStart = (clone $lineEnd)->startOfMonth()->subMonths(11);
             
-            $rawMonthlySupplies = Supply::forUser($user)
+            $rawMonthlySupplies = $baseQuery()
                 ->selectRaw("$suppliesMonthExpr as m, COUNT(*) c")
                 ->whereBetween('supplies.created_at', [
                     $lineStart->toDateString() . ' 00:00:00',
@@ -83,7 +108,7 @@ class Dashboard extends Component
             }
 
             // Top on-hand supplies by value
-            $topOnHandSupplies = Supply::forUser($user)
+            $topOnHandSupplies = $baseQuery()
                 ->where('current_stock', '>', 0)
                 ->selectRaw('id, supply_number, description, current_stock, unit_cost, (current_stock * unit_cost) as on_hand_value')
                 ->orderByDesc('on_hand_value')
@@ -103,6 +128,25 @@ class Dashboard extends Component
             );
         });
 
-        return view('livewire.roles.supply-officer.dashboard', $data);
+        $viewData = array_merge($data, [
+            'showMainLibraryOnly' => $this->showMainLibraryOnly,
+            'isMainBranch' => $user->isMainBranch(),
+        ]);
+
+        // Dispatch chart data update for JavaScript
+        $this->dispatch('updateSupplyChartData', [
+            'categories' => ($data['topSupplyCategories'] ?? collect())->pluck('name')->toArray(),
+            'categoryCounts' => ($data['topSupplyCategories'] ?? collect())->pluck('v')->toArray(),
+            'categoryValues' => ($data['topSupplyCategories'] ?? collect())->pluck('v')->toArray(),
+            'monthlyLabels' => collect(range(0, 11))->map(fn($i) => now()->subMonths(11-$i)->format('M Y'))->toArray(),
+            'monthlyAdds' => $data['suppliesMonthlyValues'] ?? array_fill(0, 12, 0),
+            'stockHealth' => [
+                'ok' => $data['stockOk'] ?? 0,
+                'low' => $data['stockLow'] ?? 0,
+                'out' => $data['stockOut'] ?? 0
+            ]
+        ]);
+
+        return view('livewire.roles.supply-officer.dashboard', $viewData);
     }
 }

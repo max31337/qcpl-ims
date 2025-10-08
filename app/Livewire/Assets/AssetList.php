@@ -25,7 +25,7 @@ class AssetList extends Component
     public $categoryFilter = '';
     public $statusFilter = '';
     public $branchFilter = '';
-    public $selectedBranches = []; // Array of selected branch IDs
+    public $showMainLibraryOnly = false; // Toggle for main library users
     public $recentFilter = '';
     public $perPage = 12;
     public $viewMode = 'card'; // 'card' | 'list'
@@ -80,6 +80,7 @@ class AssetList extends Component
         'categoryFilter' => ['except' => ''],
         'statusFilter' => ['except' => ''],
         'branchFilter' => ['except' => ''],
+        'showMainLibraryOnly' => ['except' => false],
         'recentFilter' => ['except' => ''],
         'viewMode' => ['except' => 'card'],
     ];
@@ -102,6 +103,16 @@ class AssetList extends Component
     public function updatingBranchFilter()
     {
         $this->resetPage();
+    }
+
+    public function updatingShowMainLibraryOnly()
+    {
+        $this->resetPage();
+    }
+
+    public function toggleScope()
+    {
+        $this->showMainLibraryOnly = !$this->showMainLibraryOnly;
     }
 
     public function updatingRecentFilter()
@@ -129,6 +140,7 @@ class AssetList extends Component
         $this->categoryFilter = '';
         $this->statusFilter = '';
         $this->branchFilter = '';
+        $this->showMainLibraryOnly = false;
         $this->recentFilter = '';
         $this->resetPage();
     }
@@ -458,7 +470,10 @@ class AssetList extends Component
             $query->where('status', $this->statusFilter);
         }
 
-        if ($this->branchFilter) {
+        // Handle branch filtering based on user role and toggle
+        if (auth()->user()->isPropertyOfficer() && auth()->user()->isMainBranch() && $this->showMainLibraryOnly) {
+            $query->where('current_branch_id', auth()->user()->branch_id);
+        } elseif ($this->branchFilter) {
             $query->where('current_branch_id', $this->branchFilter);
         }
 
