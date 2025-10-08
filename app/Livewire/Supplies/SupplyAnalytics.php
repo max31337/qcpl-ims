@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Livewire\Supplies;
+namespace App\Livewire\Supplies;
 
 use Livewire\Component;
 use App\Models\Supply;

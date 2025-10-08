@@ -43,8 +43,39 @@
                 <x-ui.icon name="activity" />
                 My Activity
             </a>
+
+        {{-- Property officer gets only asset-related links + my activity --}}
+        @elseif($role === 'property_officer')
+            <a href="{{ route('assets.index') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.*') && !request()->routeIs('assets.transfer-histories') && !request()->routeIs('assets.reports') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="boxes" />
+                Assets Management
+            </a>
+
+            <a href="{{ route('assets.transfer-histories') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="history" />
+                Transfer Histories
+            </a>
+
+            <a href="{{ route('assets.reports') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.reports') || request()->routeIs('admin.assets.reports') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="bar-chart" />
+                Asset Analytics
+            </a>
+
+            <a href="{{ route('activity.me') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('activity.me') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="activity" />
+                My Activity
+            </a>
+
+        {{-- Admin / observer menu --}}
         @else
-            {{-- Admin / property_officer / observer menu (preserve previous admin menu) --}}
             <a href="{{ route('admin.analytics') }}"
                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
                wire:navigate>
