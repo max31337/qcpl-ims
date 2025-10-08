@@ -20,10 +20,12 @@ class SupplyList extends Component
     public string $status = '';
     #[Url]
     public string $category = '';
+    #[Url]
+    public string $branchFilter = '';
 
     public function updating($name, $value)
     {
-        if (in_array($name, ['search','status','category'])) {
+        if (in_array($name, ['search','status','category','branchFilter'])) {
             $this->resetPage();
         }
     }
@@ -33,6 +35,7 @@ class SupplyList extends Component
         $this->search = '';
         $this->status = '';
         $this->category = '';
+        $this->branchFilter = '';
         $this->resetPage();
     }
 
@@ -48,11 +51,22 @@ class SupplyList extends Component
             }))
             ->when($this->status !== '', fn($qq) => $qq->where('status', $this->status))
             ->when($this->category !== '', fn($qq) => $qq->where('category_id', $this->category))
+            ->when($this->branchFilter !== '', fn($qq) => $qq->where('branch_id', $this->branchFilter))
             ->orderByDesc('last_updated');
 
         return view('livewire.supplies.supply-list', [
             'supplies' => $q->paginate(12),
             'categories' => Category::where('type','supply')->orderBy('name')->get(['id','name']),
+            'branches' => $this->getBranches(),
         ]);
+    }
+
+    public function getBranches()
+    {
+        $user = auth()->user();
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver() || $user->isSupplyOfficer())) {
+            return \App\Models\Branch::where('is_active', true)->orderBy('name')->get();
+        }
+        return \App\Models\Branch::where('id', $user->branch_id)->get();
     }
 }

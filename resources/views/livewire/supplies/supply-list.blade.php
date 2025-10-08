@@ -33,6 +33,23 @@
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </x-ui-select>
+                
+                @php $user = auth()->user(); @endphp
+                @if($user->isMainBranch() && $user->isSupplyOfficer() && count($branches) > 1)
+                {{-- Supply officer at main library gets simplified view filter --}}
+                <x-ui-select wire:model.live="branchFilter" class="min-w-[160px]">
+                    <option value="">All Branches</option>
+                    <option value="{{ $user->branch_id }}">Main Library Only</option>
+                </x-ui-select>
+                @elseif(count($branches) > 1)
+                {{-- Other users get standard branch filter --}}
+                <x-ui-select wire:model.live="branchFilter" class="min-w-[160px]">
+                    <option value="">All Branches</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                    @endforeach
+                </x-ui-select>
+                @endif
             </div>
 
             <div class="flex items-center gap-2">

@@ -96,7 +96,19 @@
                 </select>
             </div>
 
-            @if(count($branches) > 1)
+            @php $user = auth()->user(); @endphp
+            @if($user->isMainBranch() && $user->isPropertyOfficer() && count($branches) > 1)
+            {{-- Property officer at main library gets simplified view filter --}}
+            <div>
+                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">View Scope</label>
+                <select wire:model.live="branchFilter"
+                        class="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <option value="">All Branches</option>
+                    <option value="{{ $user->branch_id }}">Main Library Only</option>
+                </select>
+            </div>
+            @elseif(count($branches) > 1)
+            {{-- Other users get standard branch filter --}}
             <div>
                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Branch</label>
                 <select wire:model.live="branchFilter"

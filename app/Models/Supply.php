@@ -26,8 +26,8 @@ class Supply extends Model
     // Scope supplies according to user's visibility rules.
     public function scopeForUser($query, User $user)
     {
-        // Main-branch admins/observers see all; others are branch-scoped
-        if ($user->isAdmin() || $user->isObserver() || $user->isMainBranch()) {
+        // Main-branch users (admin, observer, supply_officer) see all supplies
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver() || $user->isSupplyOfficer())) {
             return $query; // global scope
         }
 

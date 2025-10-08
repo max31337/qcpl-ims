@@ -36,7 +36,8 @@ class Asset extends Model
 
     public function scopeForUser($query, User $user)
     {
-        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver())) {
+        // Main-branch users (admin, observer, property_officer) see all assets
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver() || $user->isPropertyOfficer())) {
             return $query;
         }
         return $query->where('current_branch_id', $user->branch_id);

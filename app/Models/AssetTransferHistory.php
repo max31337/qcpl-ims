@@ -35,4 +35,18 @@ class AssetTransferHistory extends Model
     public function currentBranch(): BelongsTo { return $this->belongsTo(Branch::class, 'current_branch_id'); }
     public function currentDivision(): BelongsTo { return $this->belongsTo(Division::class, 'current_division_id'); }
     public function currentSection(): BelongsTo { return $this->belongsTo(Section::class, 'current_section_id'); }
+
+    public function scopeForUser($query, User $user)
+    {
+        // Main-branch users (admin, observer, property_officer) see all transfer histories
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver() || $user->isPropertyOfficer())) {
+            return $query;
+        }
+        
+        // Others see transfers where they're involved (origin or current branch)
+        return $query->where(function ($q) use ($user) {
+            $q->where('origin_branch_id', $user->branch_id)
+              ->orWhere('current_branch_id', $user->branch_id);
+        });
+    }
 }

@@ -25,6 +25,7 @@ class AssetList extends Component
     public $categoryFilter = '';
     public $statusFilter = '';
     public $branchFilter = '';
+    public $selectedBranches = []; // Array of selected branch IDs
     public $recentFilter = '';
     public $perPage = 12;
     public $viewMode = 'card'; // 'card' | 'list'
@@ -619,7 +620,7 @@ class AssetList extends Component
     public function getBranchesProperty()
     {
         $user = auth()->user();
-        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver())) {
+        if ($user->isMainBranch() && ($user->isAdmin() || $user->isObserver() || $user->isPropertyOfficer())) {
             return Branch::where('is_active', true)->orderBy('name')->get();
         }
         return Branch::where('id', $user->branch_id)->get();
