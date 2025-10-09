@@ -74,7 +74,30 @@
                 My Activity
             </a>
 
-        {{-- Admin / observer menu --}}
+        {{-- Observer menu - read-only access without management links --}}
+        @elseif($role === 'observer')
+            <a href="{{ route('admin.analytics') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="line-chart" />
+                Analytics
+            </a>
+
+            <a href="{{ route('assets.transfer-histories') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="history" />
+                Transfer Histories
+            </a>
+
+            <a href="{{ route('admin.activity-logs') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.activity-logs') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="activity" />
+                Activity Logs
+            </a>
+
+        {{-- Admin menu - full access --}}
         @else
             <a href="{{ route('admin.analytics') }}"
                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.analytics') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"

@@ -39,6 +39,9 @@ class DatabaseSeeder extends Seeder
         // Default admin (idempotent)
         $this->call(AdminUserSeeder::class);
 
+        // Default observer (idempotent)
+        $this->call(ObserverUserSeeder::class);
+
         // Demo assets with images (idempotent; links to files under storage/app/public/assets)
         $this->call(AssetDemoSeeder::class);
 

@@ -77,32 +77,51 @@ Route::get('/admin/activity-logs', ActivityLogs::class)
     ->name('admin.activity-logs');
 
 // Admin - Assets Reports
-Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer'])
+Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer,observer'])
     ->get('/admin/assets/reports', \App\Livewire\Assets\AssetReports::class)
     ->name('admin.assets.reports');
 
 // Supplies Management Routes  
 Route::middleware(['auth', 'verified', 'mfa'])->prefix('supplies')->name('supplies.')->group(function () {
-    Route::get('/', \App\Livewire\Supplies\SupplyList::class)->name('index');
-    Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
-    Route::get('/{id}/edit', \App\Livewire\Supplies\SupplyForm::class)->name('edit');
-    Route::get('/{id}/adjust', \App\Livewire\Supplies\StockAdjustment::class)->name('adjust');
-    // Supply officer analytics dashboard (role-guarded)
+    // Management routes (supply officers and staff only)
+    Route::middleware('check.role:supply_officer,staff')->group(function () {
+        Route::get('/', \App\Livewire\Supplies\SupplyList::class)->name('index');
+        Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
+        Route::get('/{id}/edit', \App\Livewire\Supplies\SupplyForm::class)->name('edit');
+        Route::get('/{id}/adjust', \App\Livewire\Supplies\StockAdjustment::class)->name('adjust');
+    });
+    
+    // Analytics (supply officers only)
     Route::get('/analytics', \App\Livewire\Supplies\SupplyAnalytics::class)
-        ->middleware(['check.role:supply_officer'])
+        ->middleware('check.role:supply_officer')
         ->name('analytics');
-    Route::get('/reports', \App\Livewire\Supplies\SupplyReports::class)->name('reports');
+    
+    // Reports (supply officers, staff, admin, and observers)
+    Route::get('/reports', \App\Livewire\Supplies\SupplyReports::class)
+        ->middleware('check.role:admin,supply_officer,staff,observer')
+        ->name('reports');
 });
 
 // Assets Management Routes
-Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer'])->prefix('assets')->name('assets.')->group(function () {
-    Route::get('/', action: \App\Livewire\Assets\AssetList::class)->name('index');
-    Route::get('/create', \App\Livewire\Assets\AssetForm::class)->name('form');
-    Route::get('/{assetId}/edit', \App\Livewire\Assets\AssetForm::class)->name('edit');
-    Route::get('/{assetId}/transfer', \App\Livewire\Assets\AssetTransfer::class)->name('transfer');
-    Route::get('/{assetId}/history', \App\Livewire\Assets\AssetHistory::class)->name('history');
-    Route::get('/transfer-histories', TransferHistories::class)->name('transfer-histories');
-    Route::get('/reports', \App\Livewire\Assets\AssetReports::class)->name('reports');
+Route::middleware(['auth', 'verified', 'mfa'])->prefix('assets')->name('assets.')->group(function () {
+    // Management routes (admin and property officers only)
+    Route::middleware('check.role:admin,property_officer')->group(function () {
+        Route::get('/', action: \App\Livewire\Assets\AssetList::class)->name('index');
+        Route::get('/create', \App\Livewire\Assets\AssetForm::class)->name('form');
+        Route::get('/{assetId}/edit', \App\Livewire\Assets\AssetForm::class)->name('edit');
+        Route::get('/{assetId}/transfer', \App\Livewire\Assets\AssetTransfer::class)->name('transfer');
+    });
+    
+    // Read-only routes for observers (view history and transfer records)
+    Route::middleware('check.role:admin,property_officer,observer')->group(function () {
+        Route::get('/{assetId}/history', \App\Livewire\Assets\AssetHistory::class)->name('history');
+        Route::get('/transfer-histories', TransferHistories::class)->name('transfer-histories');
+    });
+    
+    // Reports (admin, property officers, and observers)
+    Route::get('/reports', \App\Livewire\Assets\AssetReports::class)
+        ->middleware('check.role:admin,property_officer,observer')
+        ->name('reports');
 });
 
 // Load Breeze/Laravel auth routes (registers logout route)
