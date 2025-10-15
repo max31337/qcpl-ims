@@ -169,7 +169,7 @@
     <x-ui-card class="p-6">
       <div class="flex items-center justify-between mb-4">
         <h4 class="text-lg font-medium">Top Supply Categories</h4>
-        <x-ui.icon name="tag" class="h-5 w-5 text-muted-foreground" />
+  <x-ui.icon name="boxes" class="h-5 w-5 text-muted-foreground" />
       </div>
       @if(!empty($topSupplyCategories) && $topSupplyCategories->count() > 0)
         <ul class="space-y-3">
