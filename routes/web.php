@@ -84,7 +84,7 @@ Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer
 // Supplies Management Routes  
 Route::middleware(['auth', 'verified', 'mfa'])->prefix('supplies')->name('supplies.')->group(function () {
     // Management routes (supply officers and staff only)
-    Route::middleware('check.role:supply_officer,staff')->group(function () {
+    Route::middleware('check.role:admin, supply_officer,staff')->group(function () {
         Route::get('/', \App\Livewire\Supplies\SupplyList::class)->name('index');
         Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
         Route::get('/{id}/edit', \App\Livewire\Supplies\SupplyForm::class)->name('edit');
