@@ -114,55 +114,6 @@
     </x-ui.card>
   </div>
 
-  {{-- Enhanced Analytics Charts Section --}}
-  <div class="space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="text-xl font-semibold">System Analytics</h2>
-      <a href="{{ route('admin.analytics') }}" class="text-sm text-primary hover:underline">View detailed analytics →</a>
-    </div>
-    
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <x-ui-card class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h4 class="text-lg font-medium">Assets Created</h4>
-          <x-ui.icon name="line-chart" class="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div id="assetsLineChart" style="min-height: 250px;"></div>
-        <p class="text-xs text-muted-foreground mt-2">New assets registered over the last 12 months</p>
-      </x-ui-card>
-
-      <x-ui-card class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h4 class="text-lg font-medium">Supplies Added</h4>
-          <x-ui.icon name="bar-chart" class="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div id="suppliesBarChart" style="min-height: 250px;"></div>
-        <p class="text-xs text-muted-foreground mt-2">Supply additions over the last 12 months</p>
-      </x-ui-card>
-
-      <x-ui-card class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h4 class="text-lg font-medium">Assets by Status</h4>
-          <x-ui.icon name="pie-chart" class="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div id="assetsDonutChart" class="mx-auto" style="max-width:260px; min-height: 200px;"></div>
-        <div class="mt-4 grid grid-cols-3 gap-2 text-center">
-          <div class="p-2 rounded-lg bg-emerald-50">
-            <div class="text-xs text-muted-foreground">Active</div>
-            <div class="text-lg font-bold text-emerald-600">{{ $assetsByStatus['active'] ?? 0 }}</div>
-          </div>
-          <div class="p-2 rounded-lg bg-amber-50">
-            <div class="text-xs text-muted-foreground">Condemned</div>
-            <div class="text-lg font-bold text-amber-600">{{ $assetsByStatus['condemned'] ?? 0 }}</div>
-          </div>
-          <div class="p-2 rounded-lg bg-red-50">
-            <div class="text-xs text-muted-foreground">Disposed</div>
-            <div class="text-lg font-bold text-red-600">{{ $assetsByStatus['disposed'] ?? 0 }}</div>
-          </div>
-        </div>
-      </x-ui-card>
-    </div>
-  </div>
 
   {{-- Enhanced Summary Sections --}}
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -253,8 +204,15 @@
   window.__dashboard_payload = {!! json_encode([
     'labels' => $monthlyLineLabels ?? [],
     'assetsValues' => $monthlyLineValues ?? [],
-    'suppliesMonthly' => $suppliesMonthlyValues ?? [],
-    'assetsByStatus' => is_object($assetsByStatus ?? null) ? ($assetsByStatus->toArray()) : ($assetsByStatus ?? []),
+    // For Supplies Added bar chart, pass stockOut, stockLow, stockOk
+    'stockOut' => ($assetsByStatus['out'] ?? $assetsByStatus['out_of_stock'] ?? 0) + ($assetsByStatus['outofstock'] ?? 0),
+    'stockLow' => $assetsByStatus['low'] ?? $assetsByStatus['low_stock'] ?? 0,
+    'stockOk' => $assetsByStatus['active'] ?? 0,
+    'assetsByStatus' => [
+      'active' => $assetsByStatus['active'] ?? 0,
+      'condemned' => $assetsByStatus['condemned'] ?? $assetsByStatus['condemn'] ?? 0,
+      'disposed' => $assetsByStatus['disposed'] ?? 0,
+    ],
   ], JSON_UNESCAPED_UNICODE) !!};
 
   // Dispatch event once so the charts module (bundled) can initialize immediately

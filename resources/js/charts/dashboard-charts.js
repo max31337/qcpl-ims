@@ -109,11 +109,12 @@ function renderAll(payload) {
     // Donut
     const donutEl = document.getElementById('assetsDonutChart');
     if (donutEl && payload.assetsByStatus) {
+      // Always use the order: active, condemned, disposed for color mapping
+      const sLabels = ['active', 'condemned', 'disposed'];
       const statusObj = payload.assetsByStatus || {};
-      const sLabels = Object.keys(statusObj || {});
-      // compute values respecting activeStatuses set
       const sValues = sLabels.map(k => (activeStatuses.has(k) ? (statusObj[k] || 0) : 0));
-      const sColors = sLabels.map(s => s === 'active' ? '#16a34a' : (s === 'condemn' ? '#f59e0b' : '#ef4444'));
+      // green for active, yellow for condemned, red for disposed
+      const sColors = ['#16a34a', '#f59e0b', '#ef4444'];
       createDonutChart(donutEl, sLabels, sValues, sColors);
     }
   } catch (err) {
