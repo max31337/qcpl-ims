@@ -643,6 +643,36 @@
     const suppliesData = window.__analytics_payload.suppliesValueByCategory;
     const suppliesColors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
     if (suppliesData && suppliesData.length > 0) createPieChart('suppliesCategoryPie', suppliesData, suppliesColors);
+    // Assets By Status Donut
+    const statusDataObj = window.__analytics_payload.assetsByStatus || {};
+    const statusData = [
+      { name: 'Active', v: parseInt(statusDataObj.active ?? 0) },
+      { name: 'Condemn', v: parseInt(statusDataObj.condemn ?? 0) },
+      { name: 'Disposed', v: parseInt(statusDataObj.disposed ?? 0) },
+    ].filter(d => d.v > 0);
+    const statusColors = ['#10b981','#f59e0b','#ef4444'];
+    if (document.getElementById('assetsStatusDonut')) {
+      if (statusData.length > 0) createPieChart('assetsStatusDonut', statusData, statusColors);
+      else {
+        // Render placeholder empty donut with zero-values so UI stays consistent
+        createPieChart('assetsStatusDonut', [{ name: 'None', v: 1 }], ['#e5e7eb']);
+      }
+    }
+
+    // Stock Health Donut
+    const stockOut = parseInt(window.__analytics_payload.stockOut || 0);
+    const stockLow = parseInt(window.__analytics_payload.stockLow || 0);
+    const stockOk = parseInt(window.__analytics_payload.stockOk || 0);
+    const stockData = [
+      { name: 'Out', v: stockOut },
+      { name: 'Low', v: stockLow },
+      { name: 'OK', v: stockOk },
+    ].filter(d => d.v > 0);
+    const stockColors = ['#ef4444','#f59e0b','#10b981'];
+    if (document.getElementById('stockHealthDonut')) {
+      if (stockData.length > 0) createPieChart('stockHealthDonut', stockData, stockColors);
+      else createPieChart('stockHealthDonut', [{ name: 'None', v: 1 }], ['#e5e7eb']);
+    }
   }
 
   // Main chart initialization (calls all)
@@ -653,7 +683,9 @@
       'suppliesAnalyticsBar',
       'transfersAnalyticsBar',
       'assetsCategoryPie',
-      'suppliesCategoryPie'
+      'suppliesCategoryPie',
+      'assetsStatusDonut',
+      'stockHealthDonut'
     ];
     let allReady = containers.every(id => document.getElementById(id));
     if (!allReady) {
