@@ -66,6 +66,8 @@
       'activity' => '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
       // Transfer and movement icons
       'transfer' => '<path d="M21 6H3"/><path d="m5 12-2 2 2 2"/><path d="m3 14 2-2-2-2"/><path d="M21 18H3"/><path d="m19 12 2-2-2-2"/><path d="m21 10-2 2 2 2"/>',
+  // alias used in analytics header
+  'shuffle' => '<path d="M21 6H3"/><path d="m5 12-2 2 2 2"/><path d="m3 14 2-2-2-2"/><path d="M21 18H3"/><path d="m19 12 2-2-2-2"/><path d="m21 10-2 2 2 2"/>',
       'history' => '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
       'smartphone' => '<rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/>',
       'tablet' => '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
