@@ -53,10 +53,13 @@ class Analytics extends Component
             });
         }
 
-        $key = sprintf('admin_analytics_v5:%s:%s', $this->period, $this->selectedYear);
-        $data = Cache::remember($key, 600, function () use ($assets, $supplies, $transfers, $monthExpr) {
+    // Build a cache key that includes the period and year. Avoid using $this inside the closure.
+    $period = $this->period;
+    $selectedYear = $this->selectedYear;
+    $key = sprintf('admin_analytics_v5:%s:%s', $period, $selectedYear);
+    $data = Cache::remember($key, 600, function () use ($assets, $supplies, $transfers, $monthExpr, $period, $selectedYear) {
             // Set date range and data scope based on period
-            if ($this->period === 'alltime') {
+            if ($period === 'alltime') {
                 // All time data - no date filtering
                 $assetsInRange = clone $assets;
                 $suppliesInRange = clone $supplies;
@@ -74,22 +77,22 @@ class Analytics extends Component
                 for ($i = 0; $i < 12; $i++) {
                     $labels[] = (clone $start)->addMonths($i)->format('M Y');
                 }
-            } elseif ($this->period === 'yearly') {
+            } elseif ($period === 'yearly') {
                 // Yearly data for selected year
                 $assetsInRange = clone $assets;
                 $suppliesInRange = clone $supplies;
                 $kpis = [
-                    'assetsTotal' => (clone $assetsInRange)->whereYear('assets.created_at', $this->selectedYear)->count(),
-                    'assetsValue' => (clone $assetsInRange)->whereYear('assets.created_at', $this->selectedYear)->sum(DB::raw('COALESCE(assets.total_cost,0)')),
-                    'suppliesSkus' => (clone $suppliesInRange)->whereYear('supplies.created_at', $this->selectedYear)->count(),
+                        'assetsTotal' => (clone $assetsInRange)->whereYear('assets.created_at', $selectedYear)->count(),
+                        'assetsValue' => (clone $assetsInRange)->whereYear('assets.created_at', $selectedYear)->sum(DB::raw('COALESCE(assets.total_cost,0)')),
+                        'suppliesSkus' => (clone $suppliesInRange)->whereYear('supplies.created_at', $selectedYear)->count(),
                     'suppliesValue' => (clone $supplies)->selectRaw('SUM(current_stock*unit_cost) v')->value('v') ?? 0,
-                    'transfersInRange' => (clone $transfers)->whereYear('transfer_date', $this->selectedYear)->count(),
+                    'transfersInRange' => (clone $transfers)->whereYear('transfer_date', $selectedYear)->count(),
                 ];
                 // Time series - 5 years ending at selected year
-                $start = Carbon::create($this->selectedYear - 4)->startOfYear();
-                $end = Carbon::create($this->selectedYear)->endOfYear();
+                $start = Carbon::create($selectedYear - 4)->startOfYear();
+                $end = Carbon::create($selectedYear)->endOfYear();
                 $labels = [];
-                for ($year = $this->selectedYear - 4; $year <= $this->selectedYear; $year++) {
+                for ($year = $selectedYear - 4; $year <= $selectedYear; $year++) {
                     $labels[] = (string) $year;
                 }
             } else {
@@ -97,23 +100,23 @@ class Analytics extends Component
                 $assetsInRange = clone $assets;
                 $suppliesInRange = clone $supplies;
                 $kpis = [
-                    'assetsTotal' => (clone $assetsInRange)->whereYear('assets.created_at', $this->selectedYear)->count(),
-                    'assetsValue' => (clone $assetsInRange)->whereYear('assets.created_at', $this->selectedYear)->sum(DB::raw('COALESCE(assets.total_cost,0)')),
-                    'suppliesSkus' => (clone $suppliesInRange)->whereYear('supplies.created_at', $this->selectedYear)->count(),
+                    'assetsTotal' => (clone $assetsInRange)->whereYear('assets.created_at', $selectedYear)->count(),
+                    'assetsValue' => (clone $assetsInRange)->whereYear('assets.created_at', $selectedYear)->sum(DB::raw('COALESCE(assets.total_cost,0)')),
+                    'suppliesSkus' => (clone $suppliesInRange)->whereYear('supplies.created_at', $selectedYear)->count(),
                     'suppliesValue' => (clone $supplies)->selectRaw('SUM(current_stock*unit_cost) v')->value('v') ?? 0,
-                    'transfersInRange' => (clone $transfers)->whereYear('transfer_date', $this->selectedYear)->count(),
+                    'transfersInRange' => (clone $transfers)->whereYear('transfer_date', $selectedYear)->count(),
                 ];
                 // Time series - 12 months of selected year
-                $start = Carbon::create($this->selectedYear)->startOfYear();
-                $end = Carbon::create($this->selectedYear)->endOfYear();
+                $start = Carbon::create($selectedYear)->startOfYear();
+                $end = Carbon::create($selectedYear)->endOfYear();
                 $labels = [];
                 for ($i = 1; $i <= 12; $i++) {
-                    $labels[] = Carbon::create($this->selectedYear, $i)->format('M Y');
+                    $labels[] = Carbon::create($selectedYear, $i)->format('M Y');
                 }
             }
 
             // Generate time series data based on period
-            if ($this->period === 'yearly') {
+            if ($period === 'yearly') {
                 // Yearly data for 5 years
                 $assetsYearlyRaw = (clone $assets)
                     ->selectRaw("YEAR(assets.created_at) as y, COUNT(*) c")
@@ -129,7 +132,7 @@ class Analytics extends Component
                     ->groupBy('y')->get()->keyBy('y');
 
                 $assetsMonthly = [];$suppliesMonthly = [];$transfersMonthly = [];
-                for ($year = $this->selectedYear - 4; $year <= $this->selectedYear; $year++) {
+                for ($year = $selectedYear - 4; $year <= $selectedYear; $year++) {
                     $assetsMonthly[] = (int)($assetsYearlyRaw[$year]->c ?? 0);
                     $suppliesMonthly[] = (int)($suppliesYearlyRaw[$year]->c ?? 0);
                     $transfersMonthly[] = (int)($transfersYearlyRaw[$year]->c ?? 0);
@@ -150,7 +153,7 @@ class Analytics extends Component
                     ->groupBy('m')->get()->keyBy('m');
 
                 $assetsMonthly = [];$suppliesMonthly = [];$transfersMonthly = [];
-                $monthCount = $this->period === 'alltime' ? 12 : 12;
+                $monthCount = 12;
                 for ($i = 0; $i < $monthCount; $i++) {
                     $m = (clone $start)->addMonths($i)->format('Y-m');
                     $assetsMonthly[] = (int)($assetsMonthlyRaw[$m]->c ?? 0);
@@ -195,7 +198,15 @@ class Analytics extends Component
             );
         });
 
-        return view('livewire.admin.analytics', $data);
+        // Ensure the cached data keys are available as top-level view variables to avoid undefined variable errors in Blade
+        if (is_array($data)) {
+            return view('livewire.admin.analytics', array_merge([
+                'kpis' => $data['kpis'] ?? [],
+                'labels' => $data['labels'] ?? [],
+            ], $data));
+        }
+
+        return view('livewire.admin.analytics');
     }
 
     protected function getBranches()

@@ -6,6 +6,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Branch;
 use App\Models\Division;
@@ -55,12 +56,12 @@ class AssetDemoSeeder extends Seeder
         // Default loc is MAIN
         $defaultLoc = $pickLocation($mainBranch?->id);
 
-        // Helper: random past date within last N years
-        $randomDate = function(int $maxYearsBack = 5): string {
-            $years = random_int(0, $maxYearsBack);
-            $months = random_int(0, 11);
-            $days = random_int(0, 27);
-            return now()->subYears($years)->subMonths($months)->subDays($days)->toDateString();
+        // Helper: random date between 2020-01-01 and today (inclusive)
+        $randomDate = function(): string {
+            $start = Carbon::create(2020, 1, 1)->startOfDay();
+            $end = now()->endOfDay();
+            $timestamp = random_int($start->timestamp, $end->timestamp);
+            return Carbon::createFromTimestamp($timestamp)->toDateString();
         };
 
         // Helper: decide per-item status based on age (older more likely disposed)
@@ -112,7 +113,7 @@ class AssetDemoSeeder extends Seeder
         };
 
         // Helper to create a group and N items
-        $make = function(array $g, int $count) use ($userId, $defaultLoc, $pickLocation, $otherBranches, $mainBranch, $pickStatus) {
+        $make = function(array $g, int $count) use ($userId, $defaultLoc, $pickLocation, $otherBranches, $mainBranch, $pickStatus, $randomDate) {
             $group = AssetGroup::firstOrCreate([
                 'description' => $g['description'],
                 'category_id' => $g['category_id'],
@@ -132,8 +133,15 @@ class AssetDemoSeeder extends Seeder
                 // Status: per-item based on age
                 $status = $pickStatus($g['date_acquired']);
 
-                // created_at near acquired date
-                $createdAt = now()->parse($g['date_acquired'])->addDays(random_int(0, 60));
+                // created_at: random date between 2020-01-01 and today (but not earlier than date_acquired)
+                $acquired = Carbon::parse($g['date_acquired']);
+                $randCreated = Carbon::parse($randomDate());
+                // Ensure created_at is >= date_acquired; if not, use acquired or a date shortly after
+                if ($randCreated->lessThan($acquired)) {
+                    $createdAt = (clone $acquired)->addDays(random_int(0, 60));
+                } else {
+                    $createdAt = $randCreated;
+                }
                 if ($createdAt->greaterThan(now())) { $createdAt = now()->subDays(random_int(0, 10)); }
 
                 $asset = Asset::create(array_merge($loc, [
@@ -179,7 +187,8 @@ class AssetDemoSeeder extends Seeder
 
                 $originLoc = $loc; // keep original origin
                 $currentLoc = $loc;
-                $transferDate = now()->parse($g['date_acquired'])->addMonths(random_int(1, 18));
+                // Transfers should occur after created_at
+                $transferDate = (clone $createdAt)->addMonths(random_int(1, 18));
                 for ($t = 0; $t < $transfers; $t++) {
                     // New target branch (prefer switching branch)
                     $targetBranch = $currentLoc['current_branch_id'];

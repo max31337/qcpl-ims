@@ -551,18 +551,25 @@
     return chartInstances[elementId];
   }
 
-  // Bar/line chart initialization (NEW)
+  // Bar/line chart initialization (improved)
   function initializeBarLineCharts() {
     // Assets Created (Line)
-    if (document.getElementById('assetsAnalyticsLine')) {
+    const lineEl = document.getElementById('assetsAnalyticsLine');
+    let assetData = Array.isArray(window.__analytics_payload.assetsMonthly) ? window.__analytics_payload.assetsMonthly : [];
+    let assetLabels = Array.isArray(window.__analytics_payload.labels) ? window.__analytics_payload.labels : [];
+    if (lineEl) {
       if (chartInstances['assetsAnalyticsLine']) {
         chartInstances['assetsAnalyticsLine'].destroy();
         delete chartInstances['assetsAnalyticsLine'];
       }
-      chartInstances['assetsAnalyticsLine'] = new ApexCharts(document.getElementById('assetsAnalyticsLine'), {
+      // Fallback: if no data, show zeroes for each label
+      if (!assetData || assetData.length === 0) {
+        assetData = assetLabels.map(() => 0);
+      }
+      chartInstances['assetsAnalyticsLine'] = new ApexCharts(lineEl, {
         chart: { type: 'line', height: 250, toolbar: { show: false } },
-        series: [{ name: 'Assets Created', data: window.__analytics_payload.assetsMonthly }],
-        xaxis: { categories: window.__analytics_payload.labels },
+        series: [{ name: 'Assets Created', data: assetData }],
+        xaxis: { categories: assetLabels },
         colors: ['#3b82f6'],
         stroke: { width: 3 },
         dataLabels: { enabled: false },
@@ -572,15 +579,20 @@
       chartInstances['assetsAnalyticsLine'].render();
     }
     // Supplies Added (Bar)
-    if (document.getElementById('suppliesAnalyticsBar')) {
+    const suppliesEl = document.getElementById('suppliesAnalyticsBar');
+    let suppliesData = Array.isArray(window.__analytics_payload.suppliesMonthly) ? window.__analytics_payload.suppliesMonthly : [];
+    if (suppliesEl) {
       if (chartInstances['suppliesAnalyticsBar']) {
         chartInstances['suppliesAnalyticsBar'].destroy();
         delete chartInstances['suppliesAnalyticsBar'];
       }
-      chartInstances['suppliesAnalyticsBar'] = new ApexCharts(document.getElementById('suppliesAnalyticsBar'), {
+      if (!suppliesData || suppliesData.length === 0) {
+        suppliesData = assetLabels.map(() => 0);
+      }
+      chartInstances['suppliesAnalyticsBar'] = new ApexCharts(suppliesEl, {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
-        series: [{ name: 'Supplies Added', data: window.__analytics_payload.suppliesMonthly }],
-        xaxis: { categories: window.__analytics_payload.labels },
+        series: [{ name: 'Supplies Added', data: suppliesData }],
+        xaxis: { categories: assetLabels },
         colors: ['#a21caf'],
         plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
         dataLabels: { enabled: false },
@@ -590,15 +602,20 @@
       chartInstances['suppliesAnalyticsBar'].render();
     }
     // Asset Transfers (Bar)
-    if (document.getElementById('transfersAnalyticsBar')) {
+    const transfersEl = document.getElementById('transfersAnalyticsBar');
+    let transfersData = Array.isArray(window.__analytics_payload.transfersMonthly) ? window.__analytics_payload.transfersMonthly : [];
+    if (transfersEl) {
       if (chartInstances['transfersAnalyticsBar']) {
         chartInstances['transfersAnalyticsBar'].destroy();
         delete chartInstances['transfersAnalyticsBar'];
       }
-      chartInstances['transfersAnalyticsBar'] = new ApexCharts(document.getElementById('transfersAnalyticsBar'), {
+      if (!transfersData || transfersData.length === 0) {
+        transfersData = assetLabels.map(() => 0);
+      }
+      chartInstances['transfersAnalyticsBar'] = new ApexCharts(transfersEl, {
         chart: { type: 'bar', height: 250, toolbar: { show: false } },
-        series: [{ name: 'Asset Transfers', data: window.__analytics_payload.transfersMonthly }],
-        xaxis: { categories: window.__analytics_payload.labels },
+        series: [{ name: 'Asset Transfers', data: transfersData }],
+        xaxis: { categories: assetLabels },
         colors: ['#f59e42'],
         plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
         dataLabels: { enabled: false },
@@ -607,6 +624,13 @@
       });
       chartInstances['transfersAnalyticsBar'].render();
     }
+  }
+
+  // Listen for Livewire event to force chart refresh after asset creation
+  if (window.Livewire) {
+    window.Livewire.on && window.Livewire.on('assetCreated', () => {
+      setTimeout(initializeAnalyticsCharts, 200);
+    });
   }
 
   // Pie chart initialization (unchanged)
