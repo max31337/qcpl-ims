@@ -17,8 +17,10 @@ use App\Livewire\Roles\Observer\Dashboard as ObserverDashboard;
 
 Route::view('/', 'welcome')->name('welcome');
 
-// Dashboard router - redirects users to their role-specific dashboard
-Route::get('/dashboard', DashboardRouter::class)
+// Dashboard - unified wrapper that mounts the proper role-specific Livewire dashboard
+Route::get('/dashboard', function () {
+    return view('dashboard-wrapper');
+})
     ->middleware(['auth', 'verified', 'mfa'])
     ->name('dashboard');
 
