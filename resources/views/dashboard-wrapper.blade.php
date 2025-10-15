@@ -6,8 +6,8 @@
     </x-slot>
 
     <div class="py-4">
-        <div class="max-w-5xl mx-auto sm:px-4 lg:px-6">
-            <div class="bg-white shadow-sm sm:rounded-lg p-4 lg:p-6">
+        <div class="w-full px-4 sm:px-6 lg:px-8">
+            <div class="bg-white shadow-sm sm:rounded-lg p-4 lg:p-6 w-full">
             @auth
                 @php
                     $user = auth()->user();
