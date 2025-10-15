@@ -17,44 +17,7 @@
     </div>
   </div>
 
-  {{-- Enhanced Filters --}}
-  <x-ui.card class="p-8">
-    <div class="flex items-center justify-between mb-6">
-      <div class="flex items-center gap-3">
-        <div class="h-12 w-12 rounded-full bg-gradient-to-r from-indigo-100 to-purple-100 flex items-center justify-center">
-          <x-ui.icon name="filter" class="w-6 h-6 text-indigo-600" />
-        </div>
-        <div>
-          <h4 class="text-xl font-semibold">Analytics Filters</h4>
-          <p class="text-sm text-muted-foreground">Customize your analytics view</p>
-        </div>
-      </div>
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div>
-        <x-ui.label class="text-base font-semibold mb-3 flex items-center gap-2">
-          <x-ui.icon name="calendar" class="w-4 h-4 text-blue-600" />
-          View Period
-        </x-ui.label>
-        <select class="mt-2 flex h-12 w-full rounded-lg border-2 border-input bg-background px-4 py-3 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 transition-all" wire:model.live="period">
-          <option value="alltime">📊 All Time</option>
-          <option value="monthly">📅 Monthly View</option>
-          <option value="yearly">🗓️ Yearly View</option>
-        </select>
-      </div>
-      <div x-show="$wire.period !== 'alltime'">
-        <x-ui.label class="text-base font-semibold mb-3 flex items-center gap-2">
-          <x-ui.icon name="calendar-days" class="w-4 h-4 text-green-600" />
-          Year
-        </x-ui.label>
-        <select class="mt-2 flex h-12 w-full rounded-lg border-2 border-input bg-background px-4 py-3 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 focus-visible:ring-offset-2 transition-all" wire:model.live="selectedYear">
-          @for($year = now()->year; $year >= now()->year - 5; $year--)
-            <option value="{{ $year }}">{{ $year }}</option>
-          @endfor
-        </select>
-      </div>
-    </div>
-  </x-ui.card>
+  {{-- Filters removed per request: analytics always shows All Time --}}
 
   {{-- Enhanced KPI Cards --}}
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
@@ -502,9 +465,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts@latest"></script>
-<script>
-  // Analytics payload for charts
-  window.__analytics_payload = {!! json_encode([
+
+{{-- Render the analytics payload into a hidden JSON script so Livewire DOM updates replace it and our JS can re-read it on every update --}}
+<script type="application/json" id="analytics-payload">{!! json_encode([
     'labels' => $labels ?? [],
     'assetsMonthly' => $assetsMonthly ?? [],
     'suppliesMonthly' => $suppliesMonthly ?? [],
@@ -519,7 +482,25 @@
     'suppliesValueByCategory' => ($suppliesValueByCategory ?? collect())->map(function($item) {
       return ['name' => $item->name, 'v' => floatval($item->v ?? 0)];
     })->toArray(),
-  ], JSON_UNESCAPED_UNICODE) !!};
+  ], JSON_UNESCAPED_UNICODE) !!}</script>
+
+<script>
+  // Read analytics payload from the DOM so Livewire updates (partial DOM patches) are respected.
+  function fetchPayload() {
+    const el = document.getElementById('analytics-payload');
+    if (!el) return;
+    try {
+      // innerText/ textContent works across browsers; JSON was placed as the node text
+      const raw = el.textContent || el.innerText || el.innerHTML || '';
+      window.__analytics_payload = raw ? JSON.parse(raw) : {};
+    } catch (e) {
+      console.error('Failed to parse analytics payload', e);
+      window.__analytics_payload = window.__analytics_payload || {};
+    }
+  }
+
+  // Ensure payload exists on initial script run
+  fetchPayload();
 
   let chartInstances = {};
 
@@ -677,6 +658,8 @@
 
   // Main chart initialization (calls all)
   function initializeAnalyticsCharts(retries = 5) {
+    // Always refresh the payload from the DOM before rendering charts so filter changes are applied
+    fetchPayload();
     // Wait for all chart containers
     const containers = [
       'assetsAnalyticsLine',
@@ -709,9 +692,31 @@
   } else {
     setTimeout(initializeAnalyticsCharts, 100);
   }
-  if (window.Livewire) {
-    window.Livewire.hook('message.processed', () => { setTimeout(initializeAnalyticsCharts, 100); });
+  // Debounce helper to avoid multiple re-inits firing in rapid succession
+  function debounce(fn, wait = 150) {
+    let t; return function(...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), wait); };
   }
+
+  const debouncedInit = debounce(() => {
+    fetchPayload();
+    initializeAnalyticsCharts();
+  }, 200);
+
+  if (window.Livewire) {
+    window.Livewire.hook('message.processed', () => { debouncedInit(); });
+  }
+
+  // Wire the Refresh button to re-fetch payload and re-init charts. The button is in the DOM above.
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target.closest && ev.target.closest('button');
+    if (!btn) return;
+    // match by icon name inside or by text
+    if (btn.innerText && btn.innerText.trim().toLowerCase().includes('refresh')) {
+      // ask Livewire to refresh server data if component listens, then re-init graphs
+      if (window.Livewire) window.Livewire.emit('refreshAnalytics');
+      debouncedInit();
+    }
+  });
 
   // Debug: Log payload on load
   console.log('Analytics payload loaded:', window.__analytics_payload);
