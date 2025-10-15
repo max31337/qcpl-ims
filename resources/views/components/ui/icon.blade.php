@@ -21,6 +21,8 @@
 @php
   // Minimal Lucide icon map used across the app; add more as needed
   $paths = [
+  // ...existing code...
+  'clock' => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
     'layout-dashboard' => '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
     'boxes' => '<path d="M7.5 4.27 12 6.16l4.5-1.89"/><path d="M12 6.16v5.68"/><path d="M7.5 7.27 12 9.16l4.5-1.89"/><path d="M3 7v10l9 4 9-4V7"/><path d="M3 7 12 3l9 4"/>',
     'users' => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="m22 2-5 10-3-3-2 5"/>',

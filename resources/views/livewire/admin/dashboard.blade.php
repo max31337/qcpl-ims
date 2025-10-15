@@ -94,7 +94,7 @@
           <p class="text-2xl font-bold text-amber-600">{{ number_format($pendingApprovals ?? 0) }}</p>
           <p class="text-xs text-muted-foreground mt-1">User registrations</p>
         </div>
-        <div class="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-between">
+        <div class="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
           <x-ui.icon name="clock" class="h-6 w-6 text-amber-600" />
         </div>
       </div>
