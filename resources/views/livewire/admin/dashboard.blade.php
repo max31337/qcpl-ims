@@ -108,7 +108,7 @@
           <p class="text-xs text-green-600 mt-1">{{ number_format($activeBranches ?? 0) }} active</p>
         </div>
         <div class="h-12 w-12 rounded-full bg-cyan-100 flex items-center justify-center">
-          <x-ui.icon name="map-pin" class="h-6 w-6 text-cyan-600" />
+          <x-ui.icon name="building" class="h-6 w-6 text-cyan-600" />
         </div>
       </div>
     </x-ui.card>
