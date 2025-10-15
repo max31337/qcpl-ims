@@ -66,7 +66,7 @@
           <p class="text-xs text-muted-foreground mt-1">Current stock valuation</p>
         </div>
         <div class="h-12 w-12 rounded-full bg-emerald-100 flex items-center justify-center">
-          <x-ui.icon name="dollar-sign" class="h-6 w-6 text-emerald-600" />
+          <x-ui.icon name="credit-card" class="h-6 w-6 text-emerald-600" />
         </div>
       </div>
     </x-ui.card>
