@@ -55,7 +55,8 @@ class Dashboard extends Component
             $totalAssets = (clone $assetsQuery)->count();
             $assetsValue = (clone $assetsQuery)->sum(DB::raw('COALESCE(assets.total_cost, 0)'));
             $activeAssets = (clone $assetsQuery)->where('status', 'active')->count();
-            $condemnedAssets = (clone $assetsQuery)->where('status', 'condemned')->count();
+            // compute condemned assets from normalized status counts to avoid mismatches
+            $condemnedAssets = 0; // fallback, will be overwritten from $assetsByStatus below
 
             // Monthly assets created (last 12 months)
             $driver = DB::connection()->getDriverName();
@@ -89,11 +90,23 @@ class Dashboard extends Component
                 $monthlyLineValues[] = (int) ($rawMonthly[$key]->c ?? 0);
             }
 
-            // Assets by status
-            $assetsByStatus = (clone $assetsQuery)
+            // Assets by status - normalize keys to expected labels (some records use 'condemn' vs 'condemned')
+            $rawStatus = (clone $assetsQuery)
                 ->selectRaw('status, COUNT(*) c')
                 ->groupBy('status')
-                ->pluck('c', 'status');
+                ->get()
+                ->pluck('c', 'status')
+                ->toArray();
+
+            $assetsByStatus = [
+                'active' => (int) ($rawStatus['active'] ?? $rawStatus['Active'] ?? 0),
+                // Accept both 'condemn' and 'condemned' as the same bucket
+                'condemned' => (int) ($rawStatus['condemned'] ?? $rawStatus['condemn'] ?? $rawStatus['Condemned'] ?? $rawStatus['Condemn'] ?? 0),
+                'disposed' => (int) ($rawStatus['disposed'] ?? $rawStatus['Disposed'] ?? 0),
+            ];
+
+            // Update KPI condemned count from normalized status results
+            $condemnedAssets = $assetsByStatus['condemned'] ?? 0;
 
             // Assets by category value
             $assetsByCategoryValue = (clone $assetsQuery)
