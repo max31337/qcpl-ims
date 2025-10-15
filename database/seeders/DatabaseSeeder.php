@@ -42,6 +42,9 @@ class DatabaseSeeder extends Seeder
         // Default observer (idempotent)
         $this->call(ObserverUserSeeder::class);
 
+    // Officer accounts for property and supply officers
+    $this->call(OfficerUserSeeder::class);
+
         // Demo assets with images (idempotent; links to files under storage/app/public/assets)
         $this->call(AssetDemoSeeder::class);
 

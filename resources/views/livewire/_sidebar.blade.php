@@ -97,6 +97,29 @@
                 Activity Logs
             </a>
 
+        {{-- Staff menu - branch-limited, no admin/supply/property links --}}
+        @elseif($role === 'staff')
+            <a href="{{ route('supplies.index') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('supplies.index') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="package" />
+                View Supplies
+            </a>
+
+            <a href="{{ route('supplies.reports') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('supplies.reports') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="bar-chart" />
+                Supply Reports
+            </a>
+
+            <a href="{{ route('activity.me') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('activity.me') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="activity" />
+                My Activity
+            </a>
+
         {{-- Admin menu - full access --}}
         @else
             <a href="{{ route('admin.analytics') }}"
