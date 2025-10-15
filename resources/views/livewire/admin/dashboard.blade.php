@@ -237,7 +237,7 @@
         <span class="text-sm font-medium">Activity Logs</span>
       </a>
       <a href="{{ route('admin.transfer-histories') }}" class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors">
-        <x-ui.icon name="git-branch" class="h-8 w-8 text-primary mb-2" />
+        <x-ui.icon name="history" class="h-8 w-8 text-primary mb-2" />
         <span class="text-sm font-medium">Transfer Histories</span>
       </a>
       <a href="{{ route('admin.analytics') }}" class="flex flex-col items-center justify-center p-4 rounded-lg border hover:bg-accent transition-colors">
