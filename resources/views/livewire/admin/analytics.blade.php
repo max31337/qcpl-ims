@@ -521,158 +521,140 @@
     })->toArray(),
   ], JSON_UNESCAPED_UNICODE) !!};
 
-  // Store chart instances
   let chartInstances = {};
 
-  // Create pie chart function
+  // Pie chart function (unchanged)
   function createPieChart(elementId, data, colors) {
     const element = document.getElementById(elementId);
     if (!element || !data || data.length === 0) return null;
-
-    // Destroy existing chart if it exists
     if (chartInstances[elementId]) {
       chartInstances[elementId].destroy();
       delete chartInstances[elementId];
     }
-
-    // Clear the element content to remove any existing charts
     element.innerHTML = '';
-
     const labels = data.map(item => item.name);
     const values = data.map(item => item.v);
-
     const options = {
-      chart: {
-        type: 'pie',
-        height: '100%',
-        width: '100%',
-        toolbar: {
-          show: false
-        },
-        animations: {
-          enabled: true,
-          easing: 'easeinout',
-          speed: 800
-        }
-      },
+      chart: { type: 'pie', height: '100%', width: '100%', toolbar: { show: false }, animations: { enabled: true, easing: 'easeinout', speed: 800 } },
       series: values,
       labels: labels,
       colors: colors,
-      legend: {
-        show: false
-      },
-      dataLabels: {
-        enabled: true,
-        style: {
-          fontSize: '11px',
-          fontWeight: 'bold',
-          colors: ['#fff']
-        },
-        formatter: function(val, opts) {
-          return opts.w.config.labels[opts.seriesIndex];
-        }
-      },
-      tooltip: {
-        enabled: true,
-        theme: 'dark',
-        y: {
-          formatter: function(value) {
-            return '₱' + new Intl.NumberFormat().format(value);
-          }
-        }
-      },
-      stroke: {
-        width: 2,
-        colors: ['#ffffff']
-      },
-      plotOptions: {
-        pie: {
-          donut: {
-            size: '0%'
-          },
-          expandOnClick: false
-        }
-      },
-      responsive: [{
-        breakpoint: 480,
-        options: {
-          chart: {
-            width: '100%'
-          }
-        }
-      }]
+      legend: { show: false },
+      dataLabels: { enabled: true, style: { fontSize: '11px', fontWeight: 'bold', colors: ['#fff'] }, formatter: function(val, opts) { return opts.w.config.labels[opts.seriesIndex]; } },
+      tooltip: { enabled: true, theme: 'dark', y: { formatter: function(value) { return '₱' + new Intl.NumberFormat().format(value); } } },
+      stroke: { width: 2, colors: ['#ffffff'] },
+      plotOptions: { pie: { donut: { size: '0%' }, expandOnClick: false } },
+      responsive: [{ breakpoint: 480, options: { chart: { width: '100%' } } }]
     };
-
     chartInstances[elementId] = new ApexCharts(element, options);
     chartInstances[elementId].render();
     return chartInstances[elementId];
   }
 
-  // Initialize pie charts
-  function initializePieCharts() {
-    console.log('Initializing pie charts...');
-    
-    // Assets Category Pie Chart
-    const assetsData = window.__analytics_payload.assetsValueByCategory;
-    const assetsColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
-    
-    if (assetsData && assetsData.length > 0) {
-      console.log('Creating assets pie chart with data:', assetsData);
-      createPieChart('assetsCategoryPie', assetsData, assetsColors);
-    } else {
-      console.warn('No assets category data available');
+  // Bar/line chart initialization (NEW)
+  function initializeBarLineCharts() {
+    // Assets Created (Line)
+    if (document.getElementById('assetsAnalyticsLine')) {
+      if (chartInstances['assetsAnalyticsLine']) {
+        chartInstances['assetsAnalyticsLine'].destroy();
+        delete chartInstances['assetsAnalyticsLine'];
+      }
+      chartInstances['assetsAnalyticsLine'] = new ApexCharts(document.getElementById('assetsAnalyticsLine'), {
+        chart: { type: 'line', height: 250, toolbar: { show: false } },
+        series: [{ name: 'Assets Created', data: window.__analytics_payload.assetsMonthly }],
+        xaxis: { categories: window.__analytics_payload.labels },
+        colors: ['#3b82f6'],
+        stroke: { width: 3 },
+        dataLabels: { enabled: false },
+        grid: { borderColor: '#e5e7eb' },
+        tooltip: { y: { formatter: v => v } }
+      });
+      chartInstances['assetsAnalyticsLine'].render();
     }
-
-    // Supplies Category Pie Chart
-    const suppliesData = window.__analytics_payload.suppliesValueByCategory;
-    const suppliesColors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
-    
-    if (suppliesData && suppliesData.length > 0) {
-      console.log('Creating supplies pie chart with data:', suppliesData);
-      createPieChart('suppliesCategoryPie', suppliesData, suppliesColors);
-    } else {
-      console.warn('No supplies category data available');
+    // Supplies Added (Bar)
+    if (document.getElementById('suppliesAnalyticsBar')) {
+      if (chartInstances['suppliesAnalyticsBar']) {
+        chartInstances['suppliesAnalyticsBar'].destroy();
+        delete chartInstances['suppliesAnalyticsBar'];
+      }
+      chartInstances['suppliesAnalyticsBar'] = new ApexCharts(document.getElementById('suppliesAnalyticsBar'), {
+        chart: { type: 'bar', height: 250, toolbar: { show: false } },
+        series: [{ name: 'Supplies Added', data: window.__analytics_payload.suppliesMonthly }],
+        xaxis: { categories: window.__analytics_payload.labels },
+        colors: ['#a21caf'],
+        plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+        dataLabels: { enabled: false },
+        grid: { borderColor: '#e5e7eb' },
+        tooltip: { y: { formatter: v => v } }
+      });
+      chartInstances['suppliesAnalyticsBar'].render();
+    }
+    // Asset Transfers (Bar)
+    if (document.getElementById('transfersAnalyticsBar')) {
+      if (chartInstances['transfersAnalyticsBar']) {
+        chartInstances['transfersAnalyticsBar'].destroy();
+        delete chartInstances['transfersAnalyticsBar'];
+      }
+      chartInstances['transfersAnalyticsBar'] = new ApexCharts(document.getElementById('transfersAnalyticsBar'), {
+        chart: { type: 'bar', height: 250, toolbar: { show: false } },
+        series: [{ name: 'Asset Transfers', data: window.__analytics_payload.transfersMonthly }],
+        xaxis: { categories: window.__analytics_payload.labels },
+        colors: ['#f59e42'],
+        plotOptions: { bar: { borderRadius: 4, columnWidth: '60%' } },
+        dataLabels: { enabled: false },
+        grid: { borderColor: '#e5e7eb' },
+        tooltip: { y: { formatter: v => v } }
+      });
+      chartInstances['transfersAnalyticsBar'].render();
     }
   }
 
-  // Function to initialize charts with retry mechanism
+  // Pie chart initialization (unchanged)
+  function initializePieCharts() {
+    // Assets Category Pie Chart
+    const assetsData = window.__analytics_payload.assetsValueByCategory;
+    const assetsColors = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
+    if (assetsData && assetsData.length > 0) createPieChart('assetsCategoryPie', assetsData, assetsColors);
+    // Supplies Category Pie Chart
+    const suppliesData = window.__analytics_payload.suppliesValueByCategory;
+    const suppliesColors = ['#10b981','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#84cc16','#f97316','#14b8a6','#eab308'];
+    if (suppliesData && suppliesData.length > 0) createPieChart('suppliesCategoryPie', suppliesData, suppliesColors);
+  }
+
+  // Main chart initialization (calls all)
   function initializeAnalyticsCharts(retries = 5) {
-    const assetsPie = document.getElementById('assetsCategoryPie');
-    const suppliesPie = document.getElementById('suppliesCategoryPie');
-    
-    if (!assetsPie || !suppliesPie) {
+    // Wait for all chart containers
+    const containers = [
+      'assetsAnalyticsLine',
+      'suppliesAnalyticsBar',
+      'transfersAnalyticsBar',
+      'assetsCategoryPie',
+      'suppliesCategoryPie'
+    ];
+    let allReady = containers.every(id => document.getElementById(id));
+    if (!allReady) {
       if (retries > 0) {
-        console.log('Chart elements not ready, retrying...', { assetsPie: !!assetsPie, suppliesPie: !!suppliesPie });
         setTimeout(() => initializeAnalyticsCharts(retries - 1), 200);
         return;
       } else {
-        console.error('Chart elements not found after retries');
         return;
       }
     }
-    
-    console.log('Chart elements found, initializing pie charts...');
-    
-    // Initialize pie charts directly (no event dispatch to avoid duplicates)
     setTimeout(() => {
+      initializeBarLineCharts();
       initializePieCharts();
     }, 100);
   }
 
-  // Initialize when DOM is ready
+  // Always initialize after Livewire navigation (SPA), DOM ready, and Livewire updates
+  window.addEventListener('livewire:navigated', () => { setTimeout(initializeAnalyticsCharts, 100); });
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(initializeAnalyticsCharts, 100);
-    });
+    document.addEventListener('DOMContentLoaded', () => { setTimeout(initializeAnalyticsCharts, 100); });
   } else {
     setTimeout(initializeAnalyticsCharts, 100);
   }
-
-  // Also initialize after Livewire updates (if Livewire is present)
   if (window.Livewire) {
-    window.Livewire.hook('message.processed', () => {
-      setTimeout(initializeAnalyticsCharts, 100);
-    });
+    window.Livewire.hook('message.processed', () => { setTimeout(initializeAnalyticsCharts, 100); });
   }
 
   // Debug: Log payload on load
