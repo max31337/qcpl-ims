@@ -25,10 +25,11 @@ class AssetList extends Component
     public $categoryFilter = '';
     public $statusFilter = '';
     public $branchFilter = '';
-    public $showMainLibraryOnly = false; // Toggle for main library users
     public $recentFilter = '';
     public $perPage = 12;
     public $viewMode = 'card'; // 'card' | 'list'
+    // Used to remember previous branchFilter when toggling
+    public $previousBranchFilter = '';
 
     // Modal properties
     public $showModal = false;
@@ -80,7 +81,6 @@ class AssetList extends Component
         'categoryFilter' => ['except' => ''],
         'statusFilter' => ['except' => ''],
         'branchFilter' => ['except' => ''],
-        'showMainLibraryOnly' => ['except' => false],
         'recentFilter' => ['except' => ''],
         'viewMode' => ['except' => 'card'],
     ];
@@ -105,14 +105,22 @@ class AssetList extends Component
         $this->resetPage();
     }
 
-    public function updatingShowMainLibraryOnly()
-    {
-        $this->resetPage();
-    }
+
 
     public function toggleScope()
     {
-        $this->showMainLibraryOnly = !$this->showMainLibraryOnly;
+        $user = auth()->user();
+        if (!$user) return;
+        $mainBranchId = $user->branch_id;
+        if ($this->branchFilter == $mainBranchId) {
+            // Toggle OFF: restore previous or clear
+            $this->branchFilter = $this->previousBranchFilter ?: '';
+        } else {
+            // Toggle ON: remember previous, set to main branch
+            $this->previousBranchFilter = $this->branchFilter;
+            $this->branchFilter = $mainBranchId;
+        }
+        $this->resetPage();
     }
 
     public function updatingRecentFilter()
@@ -140,7 +148,7 @@ class AssetList extends Component
         $this->categoryFilter = '';
         $this->statusFilter = '';
         $this->branchFilter = '';
-        $this->showMainLibraryOnly = false;
+        $this->previousBranchFilter = '';
         $this->recentFilter = '';
         $this->resetPage();
     }
@@ -471,17 +479,8 @@ class AssetList extends Component
             $query->where('status', $this->statusFilter);
         }
 
-        // Handle branch filtering based on user role and toggle
-        if ($userObj && $userObj->isPropertyOfficer() && $userObj->isMainBranch()) {
-            if ($this->showMainLibraryOnly) {
-                // Only show assets in Main Library, ignore branchFilter
-                $query->where('current_branch_id', $userObj->branch_id);
-            } elseif ($this->branchFilter) {
-                // Show assets for selected branch
-                $query->where('current_branch_id', $this->branchFilter);
-            }
-            // If neither, show all branches
-        } elseif ($this->branchFilter) {
+        // Handle branch filtering
+        if ($this->branchFilter) {
             $query->where('current_branch_id', $this->branchFilter);
         }
 
@@ -563,13 +562,8 @@ class AssetList extends Component
             });
         }
 
-        // Main Library Only toggle: always restrict to main branch, ignore branchFilter
-        if ($user && $user->isPropertyOfficer() && $user->isMainBranch() && $this->showMainLibraryOnly) {
-            $mainBranchId = $user->branch_id;
-            $q->whereHas('assets', function ($aq) use ($mainBranchId, $user) {
-                $aq->forUser($user)->where('current_branch_id', $mainBranchId);
-            });
-        } elseif ($this->branchFilter) {
+        // Branch filter logic
+        if ($this->branchFilter) {
             $branchId = (int) $this->branchFilter;
             $q->whereHas('assets', function ($aq) use ($branchId) {
                 $aq->where('current_branch_id', $branchId);

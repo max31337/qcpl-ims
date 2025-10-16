@@ -102,14 +102,14 @@
             <div>
                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">View Scope</label>
                 <div class="mt-1.5 flex items-center gap-3 p-2 border border-input rounded-md bg-background">
-                    <span class="text-sm {{ !$showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">All Branches</span>
-                    <button wire:click="toggleScope" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $showMainLibraryOnly ? 'bg-blue-600' : 'bg-gray-200' }}">
-                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $showMainLibraryOnly ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                    <span class="text-sm {{ $branchFilter != $user->branch_id ? 'font-medium' : 'text-muted-foreground' }}">All Branches</span>
+                    <button wire:click="toggleScope" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $branchFilter == $user->branch_id ? 'bg-blue-600' : 'bg-gray-200' }}">
+                        <span class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $branchFilter == $user->branch_id ? 'translate-x-5' : 'translate-x-0' }}"></span>
                     </button>
-                    <span class="text-sm {{ $showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">Main Library Only</span>
+                    <span class="text-sm {{ $branchFilter == $user->branch_id ? 'font-medium' : 'text-muted-foreground' }}">Main Library Only</span>
                 </div>
             </div>
-            @if(!$showMainLibraryOnly)
+            @if($branchFilter != $user->branch_id)
             <div>
                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Branch</label>
                 <select wire:model.live="branchFilter"
@@ -120,8 +120,6 @@
                     @endforeach
                 </select>
             </div>
-            @else
-            {{-- When Main Library Only is on, branch filter is hidden and branchFilter is ignored --}}
             @endif
             @elseif(count($branches) > 1)
             {{-- Other users get standard branch filter --}}
@@ -143,7 +141,7 @@
                 Showing {{ $groups->count() }} of {{ $groups->total() }} groups
             </p>
             
-            @if($search || $categoryFilter || $statusFilter || $branchFilter || $recentFilter || $showMainLibraryOnly)
+            @if($search || $categoryFilter || $statusFilter || $branchFilter || $recentFilter)
                 <x-ui.button wire:click="resetFilters" variant="outline" size="sm">
                     <svg class="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M3 6h18"/>
@@ -358,7 +356,7 @@
                     Get started by adding your first asset to the system.
                 @endif
             </p>
-            @if($search || $categoryFilter || $statusFilter || $branchFilter || $showMainLibraryOnly)
+            @if($search || $categoryFilter || $statusFilter || $branchFilter)
                 <x-ui.button wire:click="resetFilters" variant="outline">Clear Filters</x-ui.button>
             @else
                 <x-ui.button wire:click="openCreateModal">Add Your First Asset</x-ui.button>
