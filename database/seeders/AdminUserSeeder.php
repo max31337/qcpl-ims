@@ -18,8 +18,14 @@ class AdminUserSeeder extends Seeder
             ['code' => 'MAIN'],
             ['name' => 'Main Library','district' => 'QC','address' => 'QC Main','is_main' => true]
         );
-        $div = Division::firstOrCreate(['code' => 'GEN'], ['name' => 'General Services','branch_id' => $main->id]);
-        $sec = Section::firstOrCreate(['code' => 'OPS'], ['name' => 'Operations','division_id' => $div->id]);
+        $div = Division::firstOrCreate(
+            ['code' => 'ADM'],
+            ['name' => 'ADMINISTRATIVE SERVICES', 'branch_id' => $main->id]
+        );
+        $sec = Section::firstOrCreate(
+            ['code' => 'RSIM'],
+            ['name' => 'RECORDS, SUPPLIES, INVENTORY AND MAINTENANCE', 'division_id' => $div->id]
+        );
 
         $email = 'admin@qcpl.gov.ph';
         User::firstOrCreate(
