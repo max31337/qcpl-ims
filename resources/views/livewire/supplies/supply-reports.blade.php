@@ -19,19 +19,24 @@
     </div>
 
     <div class="rounded-lg border bg-white p-4 shadow-sm">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select wire:model="statusFilter" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+        <form wire:submit.prevent="applyPendingFilters" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <select wire:model="pendingStatusFilter" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>
             </select>
-            <select wire:model="categoryFilter" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+            <select wire:model="pendingCategoryFilter" class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
                 <option value="">All Categories</option>
                 @foreach($categories as $cat)
                     <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                 @endforeach
             </select>
-        </div>
+            <div class="flex items-center">
+                <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-primary text-white hover:bg-primary/90 h-9 px-3 mt-1 md:mt-0">
+                    Apply Filters
+                </button>
+            </div>
+        </form>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">

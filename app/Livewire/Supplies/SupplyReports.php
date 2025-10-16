@@ -12,8 +12,27 @@ use Barryvdh\DomPDF\Facade\Pdf;
 #[Layout('layouts.app')]
 class SupplyReports extends Component
 {
+    // Actual filters used for summary and export
     public string $categoryFilter = '';
     public string $statusFilter = '';
+
+    // Pending filters bound to the UI
+    public string $pendingCategoryFilter = '';
+    public string $pendingStatusFilter = '';
+    public function mount()
+    {
+        $this->pendingCategoryFilter = $this->categoryFilter;
+        $this->pendingStatusFilter = $this->statusFilter;
+    }
+
+    /**
+     * Apply pending filters to actual filters
+     */
+    public function applyPendingFilters()
+    {
+        $this->categoryFilter = $this->pendingCategoryFilter;
+        $this->statusFilter = $this->pendingStatusFilter;
+    }
 
     /**
      * Export supplies to Excel with enhanced formatting
@@ -23,6 +42,7 @@ class SupplyReports extends Component
      */
     public function exportExcel()
     {
+        $this->applyPendingFilters();
         $export = new SuppliesExport(
             auth()->user(),
             $this->categoryFilter ?: null,
@@ -31,7 +51,6 @@ class SupplyReports extends Component
             null, // from date
             null  // to date
         );
-
         return $export->download();
     }
 
@@ -40,6 +59,7 @@ class SupplyReports extends Component
      */
     public function exportCsv()
     {
+        $this->applyPendingFilters();
         $user = auth()->user();
         $rows = $this->buildQuery($user)->with('category')
             ->orderBy('supply_number')->get();
@@ -71,6 +91,7 @@ class SupplyReports extends Component
 
     public function exportPdf()
     {
+        $this->applyPendingFilters();
         $user = auth()->user();
         $supplies = $this->buildQuery($user)->with('category')
             ->orderBy('supply_number')->get();
