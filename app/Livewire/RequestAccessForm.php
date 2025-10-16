@@ -3,6 +3,10 @@
 namespace App\Livewire;
 
 use App\Models\InvitationRequest;
+use App\Models\AdminNotification;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AdminNotificationMail;
 use Livewire\Component;
 
 class RequestAccessForm extends Component
@@ -38,13 +42,35 @@ class RequestAccessForm extends Component
         }
 
         try {
-            InvitationRequest::create([
+            $invitationRequest = InvitationRequest::create([
                 'first_name' => $this->first_name,
                 'last_name' => $this->last_name,
                 'email' => $this->email,
                 'department' => $this->department,
                 'reason' => $this->reason,
             ]);
+
+            // Create admin notification
+            AdminNotification::create([
+                'type' => 'access_request',
+                'message' => 'New access request submitted by ' . $this->first_name . ' ' . $this->last_name . ' (' . $this->email . ')',
+                'data' => [
+                    'invitation_request_id' => $invitationRequest->id,
+                    'first_name' => $this->first_name,
+                    'last_name' => $this->last_name,
+                    'email' => $this->email,
+                    'department' => $this->department,
+                    'reason' => $this->reason,
+                ],
+            ]);
+
+            // Send email to all admins
+            $admins = User::where('role', 'admin')->get();
+            $subject = 'New Access Request Submitted';
+            $body = "A new access request has been submitted by {$this->first_name} {$this->last_name} ({$this->email}).\n\nDepartment: {$this->department}\nReason: {$this->reason}";
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)->queue(new AdminNotificationMail($subject, $body));
+            }
 
             $this->submitted = true;
             $this->reset(['first_name', 'last_name', 'email', 'department', 'reason']);
