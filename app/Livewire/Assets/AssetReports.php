@@ -15,6 +15,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 #[Layout('layouts.app')]
 class AssetReports extends Component
 {
+    // Actual filters used for export
     public $categoryFilter = '';
     public $statusFilter = '';
     public $branchFilter = '';
@@ -23,10 +24,41 @@ class AssetReports extends Component
     public $dateFrom = '';
     public $dateTo = '';
 
+    // Pending filters bound to the UI
+    public $pendingCategoryFilter = '';
+    public $pendingStatusFilter = '';
+    public $pendingBranchFilter = '';
+    public $pendingDivisionFilter = '';
+    public $pendingSectionFilter = '';
+    public $pendingDateFrom = '';
+    public $pendingDateTo = '';
+
     public function mount()
     {
         $this->dateFrom = now()->startOfYear()->format('Y-m-d');
         $this->dateTo = now()->format('Y-m-d');
+        // Initialize pending filters with actual filter values
+        $this->pendingCategoryFilter = $this->categoryFilter;
+        $this->pendingStatusFilter = $this->statusFilter;
+        $this->pendingBranchFilter = $this->branchFilter;
+        $this->pendingDivisionFilter = $this->divisionFilter;
+        $this->pendingSectionFilter = $this->sectionFilter;
+        $this->pendingDateFrom = $this->dateFrom;
+        $this->pendingDateTo = $this->dateTo;
+    }
+
+    /**
+     * Apply pending filters to actual filters
+     */
+    public function applyPendingFilters()
+    {
+        $this->categoryFilter = $this->pendingCategoryFilter;
+        $this->statusFilter = $this->pendingStatusFilter;
+        $this->branchFilter = $this->pendingBranchFilter;
+        $this->divisionFilter = $this->pendingDivisionFilter;
+        $this->sectionFilter = $this->pendingSectionFilter;
+        $this->dateFrom = $this->pendingDateFrom;
+        $this->dateTo = $this->pendingDateTo;
     }
 
     /**
@@ -37,6 +69,7 @@ class AssetReports extends Component
      */
     public function exportAssets()
     {
+        $this->applyPendingFilters();
         $export = new AssetsExport(
             auth()->user(),
             $this->branchFilter ?: null,
@@ -48,13 +81,13 @@ class AssetReports extends Component
             $this->dateFrom ?: null,
             $this->dateTo ?: null
         );
-
         return $export->download();
     }
 
     // Export: PDF via DomPDF
     public function exportPdf()
     {
+        $this->applyPendingFilters();
         $assets = $this->buildQuery()->with(['category','currentBranch','currentDivision','currentSection'])
             ->orderBy('property_number')->get();
 

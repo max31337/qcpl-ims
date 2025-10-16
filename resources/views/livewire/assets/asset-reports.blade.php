@@ -15,7 +15,14 @@
   </div>
 
   <div class="p-4 rounded-lg border bg-white shadow-sm">
-    <x-reports.asset-filters :categories="$categories" :branches="$branches" :divisions="$divisions" :sections="$sections" />
+    <form wire:submit.prevent="applyPendingFilters" class="flex flex-col gap-2">
+      <x-reports.asset-filters :categories="$categories" :branches="$branches" :divisions="$divisions" :sections="$sections" />
+      <div class="mt-2">
+        <button type="submit" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-primary text-white hover:bg-primary/90 h-9 px-3">
+          Apply Filters
+        </button>
+      </div>
+    </form>
   </div>
 
   <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
