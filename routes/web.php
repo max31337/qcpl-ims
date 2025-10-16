@@ -63,6 +63,11 @@ Route::get('/admin/analytics', AdminAnalytics::class)
     ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,observer'])
     ->name('admin.analytics');
 
+// Assets Analytics (allow property officers to view asset-only analytics)
+Route::get('/assets/analytics', \App\Livewire\Assets\Analytics::class)
+    ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,observer,property_officer'])
+    ->name('assets.analytics');
+
 // Admin - Transfer Histories
 Route::get('/admin/transfer-histories', TransferHistories::class)
     ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer, observer'])
