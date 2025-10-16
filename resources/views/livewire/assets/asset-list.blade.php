@@ -98,7 +98,7 @@
 
             @php $user = auth()->user(); @endphp
             @if($user->isMainBranch() && $user->isPropertyOfficer() && count($branches) > 1)
-            {{-- Property officer at main library gets toggle --}}
+            {{-- Property officer at main library gets toggle and branch filter --}}
             <div>
                 <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block">View Scope</label>
                 <div class="mt-1.5 flex items-center gap-3 p-2 border border-input rounded-md bg-background">
@@ -109,6 +109,20 @@
                     <span class="text-sm {{ $showMainLibraryOnly ? 'font-medium' : 'text-muted-foreground' }}">Main Library Only</span>
                 </div>
             </div>
+            @if(!$showMainLibraryOnly)
+            <div>
+                <label class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Branch</label>
+                <select wire:model.live="branchFilter"
+                        class="mt-1.5 flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <option value="">All Branches</option>
+                    @foreach($branches as $branch)
+                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            @else
+            {{-- When Main Library Only is on, branch filter is hidden and branchFilter is ignored --}}
+            @endif
             @elseif(count($branches) > 1)
             {{-- Other users get standard branch filter --}}
             <div>

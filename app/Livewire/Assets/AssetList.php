@@ -452,8 +452,9 @@ class AssetList extends Component
     // Legacy per-item listing (kept for reference, now unused by view when grouping enabled)
     public function getAssetsProperty()
     {
+        $userObj = auth()->user();
         $query = Asset::with(['category', 'currentBranch', 'currentDivision', 'currentSection'])
-            ->forUser(auth()->user());
+            ->forUser($userObj);
 
         if ($this->search) {
             $query->where(function ($q) {
@@ -471,8 +472,15 @@ class AssetList extends Component
         }
 
         // Handle branch filtering based on user role and toggle
-        if (auth()->user()->isPropertyOfficer() && auth()->user()->isMainBranch() && $this->showMainLibraryOnly) {
-            $query->where('current_branch_id', auth()->user()->branch_id);
+        if ($userObj && $userObj->isPropertyOfficer() && $userObj->isMainBranch()) {
+            if ($this->showMainLibraryOnly) {
+                // Only show assets in Main Library, ignore branchFilter
+                $query->where('current_branch_id', $userObj->branch_id);
+            } elseif ($this->branchFilter) {
+                // Show assets for selected branch
+                $query->where('current_branch_id', $this->branchFilter);
+            }
+            // If neither, show all branches
         } elseif ($this->branchFilter) {
             $query->where('current_branch_id', $this->branchFilter);
         }
@@ -555,7 +563,13 @@ class AssetList extends Component
             });
         }
 
-        if ($this->branchFilter) {
+        // Main Library Only toggle: always restrict to main branch, ignore branchFilter
+        if ($user && $user->isPropertyOfficer() && $user->isMainBranch() && $this->showMainLibraryOnly) {
+            $mainBranchId = $user->branch_id;
+            $q->whereHas('assets', function ($aq) use ($mainBranchId, $user) {
+                $aq->forUser($user)->where('current_branch_id', $mainBranchId);
+            });
+        } elseif ($this->branchFilter) {
             $branchId = (int) $this->branchFilter;
             $q->whereHas('assets', function ($aq) use ($branchId) {
                 $aq->where('current_branch_id', $branchId);

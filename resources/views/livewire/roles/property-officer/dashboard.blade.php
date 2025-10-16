@@ -58,7 +58,7 @@
           <p class="text-xs text-muted-foreground mt-1">Current valuation</p>
         </div>
         <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-          <x-ui.icon name="dollar-sign" class="h-6 w-6 text-green-600" />
+          <x-ui.icon name="credit-card" class="h-6 w-6 text-green-600" />
         </div>
       </div>
     </x-ui.card>
@@ -285,12 +285,16 @@
     }
   }
 
-  // Initialize charts on page load
-  document.addEventListener('DOMContentLoaded', function() {
+  // Helper to always re-init charts
+  function forcePropertyChartsInit() {
     setTimeout(() => {
       initializePropertyCharts(window.__property_dashboard_payload);
     }, 100);
-  });
+  }
+
+  // Initialize charts on page load and on page show (bfcache)
+  document.addEventListener('DOMContentLoaded', forcePropertyChartsInit);
+  window.addEventListener('pageshow', forcePropertyChartsInit);
 
   // Listen for dashboard updates (for Livewire refreshes)
   window.addEventListener('propertyDashboard:update', function(event) {
@@ -299,13 +303,7 @@
 
   // Listen for Livewire events
   document.addEventListener('livewire:init', function () {
-    Livewire.on('property-dashboard-updated', function () {
-      // Wait a moment for the component to re-render, then update charts
-      setTimeout(() => {
-        initializePropertyCharts(window.__property_dashboard_payload);
-      }, 100);
-    });
-
+    Livewire.on('property-dashboard-updated', forcePropertyChartsInit);
     Livewire.on('updateChartData', function (data) {
       initializePropertyCharts(data[0]); // Livewire passes arrays
     });
