@@ -21,6 +21,8 @@ class SupplyList extends Component
     #[Url]
     public string $category = '';
     #[Url]
+    public string $stockHealth = '';
+    #[Url]
     public string $branchFilter = '';
     #[Url]
     public bool $showMainLibraryOnly = false;
@@ -65,6 +67,18 @@ class SupplyList extends Component
             ->when($this->status !== '', fn($qq) => $qq->where('status', $this->status))
             ->when($this->category !== '', fn($qq) => $qq->where('category_id', $this->category))
             ->when($this->branchFilter !== '', fn($qq) => $qq->where('branch_id', $this->branchFilter));
+
+        // Stock health filter
+        if ($this->stockHealth !== '') {
+            if ($this->stockHealth === 'healthy') {
+                $q->whereColumn('current_stock', '>=', 'min_stock');
+            } elseif ($this->stockHealth === 'low') {
+                $q->whereColumn('current_stock', '<', 'min_stock')
+                  ->where('current_stock', '>', 0);
+            } elseif ($this->stockHealth === 'out') {
+                $q->where('current_stock', '<=', 0);
+            }
+        }
 
         // Handle branch scoping based on user role and toggle
         if ($user->isSupplyOfficer() && $user->isMainBranch() && $this->showMainLibraryOnly) {

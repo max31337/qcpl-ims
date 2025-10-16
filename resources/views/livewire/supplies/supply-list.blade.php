@@ -33,6 +33,12 @@
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </x-ui-select>
+                <x-ui-select wire:model.live="stockHealth" class="min-w-[160px]">
+                    <option value="">All Stock</option>
+                    <option value="healthy">Healthy</option>
+                    <option value="low">Low Stock</option>
+                    <option value="out">Out of Stock</option>
+                </x-ui-select>
                 
                 @php $user = auth()->user(); @endphp
                 @if($user->isMainBranch() && $user->isSupplyOfficer() && count($branches) > 1)
