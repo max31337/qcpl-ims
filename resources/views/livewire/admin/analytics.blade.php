@@ -421,7 +421,7 @@
               </div>
               <h3 class="text-lg font-semibold">Top Transfer Routes</h3>
             </div>
-            <a href="{{ route('admin.transfer-histories') }}" 
+            <a href="{{ route('assets.transfer-histories') }}" 
                class="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-cyan-50 text-cyan-700 border border-cyan-200 rounded-lg hover:bg-cyan-100 transition-colors"
                title="View all transfer histories">
               <span>View All</span>

@@ -18,8 +18,10 @@ class ObserverUserSeeder extends Seeder
             ['code' => 'MAIN'],
             ['name' => 'Main Library', 'district' => 'QC', 'address' => 'QC Main', 'is_main' => true]
         );
-        $div = Division::firstOrCreate(['code' => 'GEN'], ['name' => 'General Services', 'branch_id' => $main->id]);
-        $sec = Section::firstOrCreate(['code' => 'OPS'], ['name' => 'Operations', 'division_id' => $div->id]);
+    $divCode = 'MAIN-ADMINISTRATIVESERVICES';
+    $secCode = 'MAIN-ADMINISTRATIVESERVICES-RECORDSSUPPLIESINVENTORYANDMAINTENANCE';
+    $div = Division::where('code', $divCode)->where('branch_id', $main->id)->first();
+    $sec = Section::where('code', $secCode)->where('division_id', $div ? $div->id : null)->first();
 
         // Main Library Observer (Global Access)
         $email = 'observer@qcpl.gov.ph';
@@ -46,8 +48,10 @@ class ObserverUserSeeder extends Seeder
         // Branch Observer (Branch-specific Access)
         $project7 = Branch::where('code', 'D1-P7')->first();
         if ($project7) {
-            $branchDiv = Division::firstOrCreate(['code' => 'P7-GEN', 'branch_id' => $project7->id], ['name' => 'General Services', 'branch_id' => $project7->id]);
-            $branchSec = Section::firstOrCreate(['code' => 'P7-OPS', 'division_id' => $branchDiv->id], ['name' => 'Operations', 'division_id' => $branchDiv->id]);
+            $branchDivCode = 'D1-P7-ADMINISTRATIVESERVICES';
+            $branchSecCode = 'D1-P7-ADMINISTRATIVESERVICES-RECORDSSUPPLIESINVENTORYANDMAINTENANCE';
+            $branchDiv = Division::where('code', $branchDivCode)->where('branch_id', $project7->id)->first();
+            $branchSec = Section::where('code', $branchSecCode)->where('division_id', $branchDiv ? $branchDiv->id : null)->first();
 
             $branchEmail = 'observer.project7@qcpl.gov.ph';
             User::firstOrCreate(
@@ -60,8 +64,8 @@ class ObserverUserSeeder extends Seeder
                     'employee_id' => 'EMP-OBS-P7',
                     'role' => 'observer',
                     'branch_id' => $project7->id,
-                    'division_id' => $branchDiv->id,
-                    'section_id' => $branchSec->id,
+                    'division_id' => $branchDiv ? $branchDiv->id : null,
+                    'section_id' => $branchSec ? $branchSec->id : null,
                     'is_active' => true,
                     'approval_status' => 'approved',
                     'email_verified_at' => now(),

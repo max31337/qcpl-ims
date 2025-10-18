@@ -41,7 +41,13 @@ class DivisionSectionSeeder extends Seeder
         ];
 
         // Simplified structure (for other branches)
-        $branchMap = [
+        $branchMap = [        
+            'ADMINISTRATIVE SERVICES' => [
+                'MIS SECTION',
+                'FINANCE & BUDGET',
+                'HUMAN RESOURCE MANAGEMENT',
+                'RECORDS, SUPPLIES, INVENTORY AND MAINTENANCE',
+            ],
             "READER’S SERVICES DIVISION" => [
                 'GENERAL READING',
                 'CHILDREN’S SECTION',

@@ -127,7 +127,7 @@
           <x-ui.icon name="chevron-right" class="h-4 w-4 text-muted-foreground" />
         </a>
 
-        <a href="{{ route('admin.transfer-histories') }}" class="flex items-center justify-between p-3 rounded-lg hover:bg-accent">
+        <a href="{{ route('assets.transfer-histories') }}" class="flex items-center justify-between p-3 rounded-lg hover:bg-accent">
           <div class="flex items-center gap-3">
             <x-ui.icon name="git-branch" class="h-5 w-5 text-muted-foreground" />
             <span>Transfer Histories</span>

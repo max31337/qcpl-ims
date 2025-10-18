@@ -63,11 +63,6 @@ Route::get('/admin/analytics', AdminAnalytics::class)
     ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,observer'])
     ->name('admin.analytics');
 
-// Admin - Transfer Histories
-Route::get('/admin/transfer-histories', TransferHistories::class)
-    ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer, observer'])
-    ->name('admin.transfer-histories');
-
 // Admin - User Management (Livewire component)
 Route::get('/admin/invitations', UserManagement::class)
     ->middleware(['auth', 'verified', 'mfa', 'check.role:admin'])
@@ -84,13 +79,111 @@ Route::middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer
     ->name('admin.assets.reports');
 
 // Supplies Management Routes  
+    // POST route for approval/rejection
+    Route::post('/approve', function (\Illuminate\Http\Request $request) {
+        $user = auth()->user();
+        $validated = $request->validate([
+            'request_id' => 'required|integer|exists:supply_requests,id',
+            'action' => 'required|in:approve,reject',
+        ]);
+        $supplyRequest = \App\Models\SupplyRequest::find($validated['request_id']);
+        if ($supplyRequest && $supplyRequest->status === 'pending') {
+            if ($validated['action'] === 'approve') {
+                $supplyRequest->status = 'approved';
+                $supplyRequest->approved_by = $user->role;
+                $supplyRequest->approved_at = now();
+            } else {
+                $supplyRequest->status = 'rejected';
+                $supplyRequest->rejected_by = $user->role;
+                $supplyRequest->rejected_at = now();
+            }
+            $supplyRequest->save();
+            // Notify staff user
+            $staff = \App\Models\User::find($supplyRequest->user_id);
+            if ($staff) {
+                $staff->notify(new \App\Notifications\SupplyRequestStatusChanged($supplyRequest));
+            }
+            return redirect()->back()->with('success', 'Request processed.');
+        }
+        return redirect()->back()->with('error', 'Request not found or already processed.');
+    })->middleware('check.role:admin,supply_officer')->name('supplies.approve.post');
 Route::middleware(['auth', 'verified', 'mfa'])->prefix('supplies')->name('supplies.')->group(function () {
+        Route::get('/request', \App\Livewire\Supplies\MyRequestForm::class)
+            ->middleware('check.role:staff')
+            ->name('request');
+        Route::get('/my-requests', \App\Livewire\Supplies\StaffSupplyRequests::class)
+            ->middleware(middleware: 'check.role:staff')
+            ->name('my-requests');
+            Route::get('/my-requests', \App\Livewire\Supplies\StaffSupplyRequests::class)
+                ->middleware('check.role:staff')
+                ->name('my-requests');
+        // POST route for approval/rejection (for test compatibility)
+        Route::post('/approve', function (\Illuminate\Http\Request $request) {
+            $user = auth()->user();
+            $validated = $request->validate([
+                'request_id' => 'required|integer|exists:supply_requests,id',
+                'action' => 'required|in:approve,reject',
+            ]);
+            $supplyRequest = \App\Models\SupplyRequest::find($validated['request_id']);
+            if ($supplyRequest) {
+                if ($validated['action'] === 'approve') {
+                    // Admin approval
+                    if ($user->role === 'admin' && $supplyRequest->status === 'pending') {
+                        $supplyRequest->status = 'admin_approved';
+                        $supplyRequest->approved_by = 'admin';
+                        $supplyRequest->approved_at = now();
+                    }
+                    // Supply officer approval (only if admin already approved)
+                    elseif ($user->role === 'supply_officer' && $supplyRequest->status === 'admin_approved') {
+                        $supplyRequest->status = 'supply_officer_approved';
+                        $supplyRequest->approved_by = 'supply_officer';
+                        $supplyRequest->approved_at = now();
+                    }
+                } else {
+                    $supplyRequest->status = 'rejected';
+                    $supplyRequest->rejected_by = $user->role;
+                    $supplyRequest->rejected_at = now();
+                }
+                $supplyRequest->save();
+                // Notify staff user
+                $staff = \App\Models\User::find($supplyRequest->user_id);
+                if ($staff) {
+                    $staff->notify(new \App\Notifications\SupplyRequestStatusChanged($supplyRequest));
+                }
+                return redirect()->back()->with('success', 'Request processed.');
+            }
+            return redirect()->back()->with('error', 'Request not found or already processed.');
+        })->middleware('check.role:admin,supply_officer')->name('approve.post');
     // Management routes (supply officers and staff only)
-    Route::middleware('check.role:admin, supply_officer,staff')->group(function () {
+    Route::middleware('check.role:admin,supply_officer,staff')->group(function () {
         Route::get('/', \App\Livewire\Supplies\SupplyList::class)->name('index');
         Route::get('/create', \App\Livewire\Supplies\SupplyForm::class)->name('create');
+        Route::post('/create', function (\Illuminate\Http\Request $request) {
+            $user = auth()->user();
+            $validated = $request->validate([
+                'items' => 'required|array|min:1',
+                'quantities' => 'required|array',
+            ]);
+            $requestItems = [];
+            foreach ($validated['items'] as $supplyId) {
+                $qty = $validated['quantities'][$supplyId] ?? 1;
+                $requestItems[] = [
+                    'supply_id' => $supplyId,
+                    'quantity' => $qty,
+                ];
+            }
+            \App\Models\SupplyRequest::create([
+                'user_id' => $user->id,
+                'items' => json_encode($requestItems),
+                'status' => 'pending',
+            ]);
+            return redirect()->back()->with('success', 'Supply request submitted!');
+        })->name('create.post');
         Route::get('/{id}/edit', \App\Livewire\Supplies\SupplyForm::class)->name('edit');
         Route::get('/{id}/adjust', \App\Livewire\Supplies\StockAdjustment::class)->name('adjust');
+        Route::get('/supply-requests', \App\Livewire\Supplies\ApproveRequests::class)
+            ->middleware('check.role:admin,supply_officer')
+            ->name('supply-requests');
     });
     
     // Analytics (supply officers only)
@@ -112,6 +205,9 @@ Route::middleware(['auth', 'verified', 'mfa'])->prefix('assets')->name('assets.'
         Route::get('/create', \App\Livewire\Assets\AssetForm::class)->name('form');
         Route::get('/{assetId}/edit', \App\Livewire\Assets\AssetForm::class)->name('edit');
         Route::get('/{assetId}/transfer', \App\Livewire\Assets\AssetTransfer::class)->name('transfer');
+        Route::get('/assets/transfer-histories', TransferHistories::class)
+            ->middleware(['auth', 'verified', 'mfa', 'check.role:admin,property_officer, observer'])
+            ->name('assets.transfer-histories');
     });
     
     // Read-only routes for observers (view history and transfer records)

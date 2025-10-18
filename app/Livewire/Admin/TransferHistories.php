@@ -112,6 +112,6 @@ class TransferHistories extends Component
 
         $transfers = $query->paginate($this->perPage);
 
-        return view('livewire.admin.transfer-histories', compact('transfers'));
+        return view('livewire.assets.transfer-histories', compact('transfers'));
     }
 }

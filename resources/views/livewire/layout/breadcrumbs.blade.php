@@ -83,7 +83,7 @@
                 'route' => '#',
                 'active' => true,
             ];
-        } elseif (request()->routeIs('admin.transfer-histories')) {
+        } elseif (request()->routeIs('assets.transfer-histories')) {
             $crumbs[] = [
                 'label' => 'Transfer Histories',
                 'route' => '#',

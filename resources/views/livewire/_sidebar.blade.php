@@ -37,6 +37,13 @@
                 Supply Analytics
             </a>
 
+            <a href="{{ route('supplies.supply-requests') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('supplies.request-approval') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="check-circle" />
+                Approve Requests
+            </a>
+
             <a href="{{ route('activity.me') }}"
                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('activity.me') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
                wire:navigate>
@@ -54,7 +61,7 @@
             </a>
 
             <a href="{{ route('assets.transfer-histories') }}"
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
                wire:navigate>
                 <x-ui.icon name="history" />
                 Transfer Histories
@@ -84,7 +91,7 @@
             </a>
 
             <a href="{{ route('assets.transfer-histories') }}"
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
                wire:navigate>
                 <x-ui.icon name="history" />
                 Transfer Histories
@@ -104,6 +111,13 @@
                wire:navigate>
                 <x-ui.icon name="package" />
                 View Supplies
+            </a>
+
+            <a href="{{ route('supplies.my-requests') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('supplies.index') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="package" />
+                View Supply Requests
             </a>
 
             <a href="{{ route('supplies.reports') }}"
@@ -137,7 +151,7 @@
             </a>
 
             <a href="{{ route('assets.transfer-histories') }}"
-               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ml-3 {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('admin.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ml-3 {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
                wire:navigate>
                 <x-ui.icon name="history" />
                 Transfer Histories
@@ -149,6 +163,13 @@
                 <x-ui.icon name="package" />
                 Supply Management
             </a>
+
+            <a href="{{ route('supplies.supply-requests') }}"
+               class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground ml-3 {{ request()->routeIs('assets.transfer-histories') || request()->routeIs('assets.transfer-histories') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
+               wire:navigate>
+                <x-ui.icon name="history" />
+                Approve Requests
+                </a>
 
             <a href="{{ route('admin.invitations') }}"
                class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-accent hover:text-accent-foreground {{ request()->routeIs('admin.invitations') ? 'bg-accent text-accent-foreground' : 'text-muted-foreground' }}"
